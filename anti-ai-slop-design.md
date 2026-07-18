@@ -6,7 +6,32 @@
 
 ---
 
+## Read This First — A Direct Instruction to Any AI Agent Using This File
+
+If you are an AI agent generating UI, styling, or a design system as context, instructions, or a style guide, this section is written directly to you and takes priority over the general rules that follow.
+
+**A visual system is decided before the first component is generated, not discovered by generating components.** Per §12.1, a generic instruction hands every taste decision to you at once, and without constraints you will fill all of them with the statistical mean — the indigo gradient, the bento grid, the Lucide icon set, the centered hero (§2.1). That isn't a failure of effort; it's what "most probable" means when nothing has told you which direction to commit to. The fix is the same one this guide's companion code guide gives for architecture: **decide the visual system explicitly, write it down, and generate from it — don't let it emerge as a side effect of building the first screen.**
+
+Before you generate the first component, page, or style for a task, do this, in order:
+
+1. **Look for the existing system before inventing one.** Check for a `DESIGN.md`, a tokens file, or an existing component library in the repo. If one exists, match its typeface, palette, spacing scale, and component patterns exactly — do not introduce a different font, a different radius, or a different shadow style because it seems nicer in isolation. Consistency with what's already there outranks your own aesthetic judgment every time.
+2. **When there is no existing system and the project is new, create the visual system yourself, upfront, before generating any screen.** When a person first describes a product or a screen they want, and the idea is concrete enough to act on, write a short `DESIGN.md` (or persist it wherever your tooling reads project context from) before generating the first component. At minimum, state:
+   - **The typeface(s)** — a real, named display and text pairing, not "a modern sans."
+   - **The palette and why** — a dominant hue tied to the actual brand or domain (§5.1), not "blue, professional."
+   - **The layout principle** — the grid, spacing scale, and one sentence on the intended focal hierarchy (§3.1, §6.1).
+   - **The tone of voice** for copy (§8) — plain, warm, terse, playful; pick one and hold it.
+   - **The explicit bans** for this project, if defaults keep creeping back in: no centered-hero-as-default, no unearned glassmorphism, no icon set chosen by popularity alone, no gradient without a stated reason (§2.1).
+3. **Treat the first generation as a draft to push past, not a deliverable**, per §12.1 — generate, then edit the output against the written system rather than accepting whatever came out first.
+4. **Never introduce a new font, palette, spacing scale, or component pattern mid-task as an incidental side effect of building one screen.** If the existing system genuinely doesn't fit what you're building, surface that as an explicit decision for review, the same way an unplanned architectural change gets flagged in the code guide — don't silently drift the visual language screen by screen until nothing matches.
+5. **When genuinely uncertain about a visual direction with no precedent to follow, ask rather than guess.** A wrong typeface or palette choice gets built on top of by every subsequent screen before anyone notices it was never a real decision.
+6. **Keep the system document itself proportional.** One `DESIGN.md` is enough for a new project — a short, load-bearing reference, not a fifteen-section brand book nobody will read. Split it further only once it's genuinely outgrown a single file — the same Rule of Three logic the code guide applies to extracting a function or a second architecture document, applied here to documentation.
+
+This is not a style preference among many. Get the visual system decided and written down, and every rule that follows in this guide is easy to apply consistently. Skip it, and no amount of individually correct typography or color choices saves the product from reading like a different app on every screen.
+
+---
+
 ## Table of Contents
+0. [Read This First — For AI Agents](#read-this-first--a-direct-instruction-to-any-ai-agent-using-this-file)
 1. [What AI Slop Actually Is](#1-what-ai-slop-actually-is)
 2. [The Diagnostic: 20 Slop Tells](#2-the-diagnostic-20-slop-tells)
 3. [First Principles](#3-first-principles)

@@ -44,6 +44,7 @@ This is not a style preference among many. Get architecture right and every othe
 ---
 
 ## Table of Contents
+0. [Read This First — For AI Agents](#read-this-first--a-direct-instruction-to-any-ai-agent-using-this-file)
 1. [What AI Slop Code Actually Is](#1-what-ai-slop-code-actually-is)
 2. [The Diagnostic: 20 Slop Tells](#2-the-diagnostic-20-slop-tells)
 3. [First Principles](#3-first-principles)
@@ -329,7 +330,7 @@ Treat every AI-suggested package the same way you'd treat a link from a stranger
 
 ## 15. Git, Reviews & Collaboration
 
-- **Small, focused commits** with messages that explain *why* (Conventional Commits is a fine convention). "fix stuff" / "wip" is slop.
+- **Small, focused commits.** "fix stuff" / "wip" is slop — see [§15.1](#151-writing-a-commit-message-worth-reading-later) for the full structure of a commit message worth keeping.
 - **One concern per PR.** A giant mixed diff can't be meaningfully reviewed.
 - **Review for correctness, edge cases, security, and readability** — not just style; automate style with linters/formatters (ESLint/Prettier, Ruff/Black, gofmt) so humans discuss substance.
 - Wire up **CI**: build, lint, type-check, tests, and security scan on every PR. Green means green.
