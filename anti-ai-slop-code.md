@@ -20,6 +20,25 @@ Before you write or generate a single line for a task, do this, in order:
 4. **Treat an architectural change as categorically different from a feature change**, even when the diff size looks similar. A 40-line change that moves where things live has a different blast radius than a 40-line change that adds a function, because everything downstream now has to agree on the new shape. Flag it as such; don't bundle it into an unrelated PR.
 5. **When genuinely uncertain, ask rather than guess.** Guessing an architectural pattern and being wrong is not a neutral action you can quietly correct later — by the time it's discovered, other code has already been built on top of the guess. This is the one category of decision in this entire guide where asking a clarifying question is cheaper than proceeding with your best assumption.
 
+### On a brand-new project: write the architecture down before you write any code
+
+Everything above assumes an existing convention to find or a precedent to match. A brand-new project has neither — which is exactly when architecture gets skipped, because there's no code yet to organize and the pressure is to start producing something visible. This is backwards. **A new project is the single cheapest moment to decide architecture, because it's the only moment nothing has been built on top of the decision yet.**
+
+When a user first describes a project idea — before generating scaffolding, before writing the first feature, before creating a single source file — you should proactively create the architecture documentation yourself, without waiting to be asked. This is a default behavior, not an optional courtesy:
+
+1. **Create `ARCHITECTURE.md` (or `AGENTS.md`, matching whatever convention file your tooling reads automatically) as close to the first message as the idea is concrete enough to support it.** If the person is still exploring the idea itself, ask enough to pin down the shape of the thing before committing structure to paper — but once there's a real feature list or a real data model implied, write the document before the first line of implementation code, not after.
+2. **Keep it to what a new codebase actually needs, not a template checklist.** Matching §17.2's "don't earn complexity before it's justified": a three-endpoint prototype needs a few paragraphs, not a fifteen-section design doc. Include, at minimum:
+   - **What this is**, in 2–3 sentences — the actual problem, not a restated feature list.
+   - **The structural pattern chosen** (feature-first, layered, a specific framework's convention) **and why** — one sentence of reasoning beats a diagram nobody reads.
+   - **The folder layout**, as an actual tree, showing where new code of each kind goes.
+   - **What's shared vs. what's feature-owned** — the boundary this project will enforce, and how (§17.3).
+   - **Naming conventions** for files, modules, and any domain terms that will recur (this doubles as the naming consistency check in §4).
+   - **Explicitly out-of-scope decisions** — patterns considered and deliberately not used yet (a queue, a second database, microservices), so a later session doesn't silently reintroduce a rejected direction as if it were new.
+3. **Treat the document as load-bearing, not aspirational.** Every subsequent session — yours or another agent's — should read it before generating structure, and every real architectural decision after the first one should update it in the same commit as the code that makes it true. A stale architecture doc is worse than none: it actively misleads the next reader, the same way a stale comment does (§9).
+4. **Don't multiply files beyond what's needed.** One `ARCHITECTURE.md` is almost always enough for a new project. Split out a separate `CONVENTIONS.md` or `DECISIONS.md` only once the single file has genuinely grown unwieldy — the same Rule of Three logic that governs when to extract a function (§5) governs when to extract a second document. Creating five thin, mostly-empty markdown files on day one to look thorough is the documentation equivalent of the five-layer abstraction slop tell in §2.
+
+This is the direct fix for the failure this whole section exists to prevent: an agent that writes the architecture down at the moment the project starts never has to guess at one later, and neither does the next agent that opens the repo.
+
 This is not a style preference among many. Get architecture right and every other rule in this guide is easy to apply consistently. Get it wrong and no amount of clean naming or good error handling saves the codebase from becoming unnavigable — for the next human, and for the next agent, including you, in the next session.
 
 ---
