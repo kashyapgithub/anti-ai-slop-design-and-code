@@ -352,6 +352,30 @@ A generic instruction ("build a landing page") hands every taste decision to the
 - **Treat the first generation as a draft to push past, not a deliverable.** The teams producing distinctive work with these tools are the ones editing the output hardest, not the ones with the best prompt.
 - **Persist the constraints as reusable project context** (a style guide, a tokens file, a written "taste" brief) rather than re-typing them per prompt — consistency across a whole product depends on the constraints outliving any single conversation.
 
+### 12.2 Committing design changes: git messages that survive the handoff
+
+Design work that lives in code — tokens, components, CSS, Figma-to-code exports — needs commit messages that carry design *rationale*, not just a file list. "Updated button styles" tells a future editor nothing about whether they're allowed to change it back.
+
+**What a design commit message should carry that a code one doesn't:**
+- **The decision, not just the change.** "Increase primary-button contrast to meet AA (was 3.8:1, now 4.6:1)" beats "fix button colors" — it tells the next person *why* the value is what it is, so they don't "fix" it back.
+- **What it visually affects**, named precisely: component, token, or breakpoint — not "styles" or "UI."
+- **A before/after reference** where the tool allows it (a linked screenshot, a Storybook/Chromatic diff link, a Figma frame) — visual changes are hard to review from a text diff alone.
+- **Token renames and removals called out explicitly** in the body, since these are breaking changes for every consumer of the design system, even though the diff looks like a one-line rename.
+
+**Example:**
+```
+fix(tokens): raise --color-text-muted contrast to meet WCAG AA
+
+--color-text-muted at #9CA3AF on our --color-surface background
+measured 3.8:1, failing the 4.5:1 body-text minimum (§5.5). Darkened
+to #6B7280 (4.6:1). Affects secondary text across cards, table rows,
+and form helper text — spot-checked all three in light and dark mode.
+
+Refs #219 (a11y audit)
+```
+
+This is the same imperative-mood, why-not-what structure covered for code in [§15.1](#151-writing-a-commit-message-worth-reading-later) of the code guide — design changes just need one more thing in the body: the visual or perceptual reason the pixels moved.
+
 ---
 
 ## 13. The Anti-Slop Review Checklist
@@ -392,6 +416,7 @@ A generic instruction ("build a landing page") hands every taste decision to the
 - [ ] Is there at least one deliberate, memorable moment?
 - [ ] Would a designer I respect see *decisions*, not *defaults*?
 - [ ] If I generated a first draft with AI, did I give it real constraints — or did I let it default to indigo gradients, bento grids, and stock icons?
+- [ ] Commit messages for design/token changes state the visual rationale and call out breaking token renames, not just "updated styles."
 
 ---
 

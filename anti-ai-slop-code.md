@@ -295,7 +295,50 @@ Treat every AI-suggested package the same way you'd treat a link from a stranger
 - **Review for correctness, edge cases, security, and readability** — not just style; automate style with linters/formatters (ESLint/Prettier, Ruff/Black, gofmt) so humans discuss substance.
 - Wire up **CI**: build, lint, type-check, tests, and security scan on every PR. Green means green.
 
-### 15.1 The agentic-PR flood is a real cost, not a hypothetical
+### 15.1 Writing a commit message worth reading later
+
+A commit message is documentation for the person debugging this line six months from now — often you. Slop commit messages are the git equivalent of narration comments: present, technically true, and useless.
+
+**Structure (works for Conventional Commits or plain prose):**
+```
+<type>(<scope>): <imperative summary, ≤50 chars, no trailing period>
+
+<body: why this change, not what — the diff already shows what>
+<wrap at ~72 chars, explain the problem this solves, tradeoffs
+considered, and anything a reviewer needs to understand the
+change without re-deriving it>
+
+<footer: closes #123, refs #456, BREAKING CHANGE: ..., Co-authored-by: ...>
+```
+
+- **Summary line is imperative mood**: "Fix race condition in retry queue," not "Fixed," "Fixes," or "Fixing." Test: it should complete the sentence "If applied, this commit will ___."
+- **The body explains *why*, never restates the diff.** `git diff` already shows what changed; a message that says "updated `user.ts` to change the validation logic" adds nothing `git log -p` didn't already tell you. Say *why* the old validation was wrong and what broke because of it.
+- **One logical change per commit.** A commit that touches unrelated files for unrelated reasons can't be reverted, bisected, or reviewed cleanly. If the message needs "and" to describe it, it's probably two commits.
+- **Types worth using** (Conventional Commits): `feat`, `fix`, `refactor`, `perf`, `test`, `docs`, `chore`, `build`, `ci`. Consistency here makes changelogs and `git log --oneline --grep` genuinely useful, not just decorative.
+- **Reference the issue, don't replace the message with it.** `Closes #482` is a footer, not a substitute for explaining the change — issue trackers get migrated and deleted; the git history is often what survives.
+- **`git bisect` is the real test.** A good commit message (and an atomic commit) means that when `git bisect` lands on it, the message alone tells you whether this is the culprit, without needing to reconstruct context from three other commits.
+- **AI-assisted commits need the same scrutiny as AI-assisted code.** A generated message that summarizes *what* the diff touched (file names, line counts) but not *why* is slop with better formatting — see §15.2. If you didn't understand the change well enough to write the *why* yourself, that's a signal to go re-read the diff, not to ship the auto-generated summary.
+
+**Slop vs. craft:**
+```
+# slop
+git commit -m "fixes"
+git commit -m "Updated files"
+git commit -m "wip, will clean up later"
+
+# craft
+git commit -m "fix(auth): reject expired refresh tokens on rotation
+
+Refresh tokens issued before the 2024-01 key rotation were still
+accepted because the rotation only updated the signing key, not
+the expiry check. Attackers could replay a pre-rotation token
+indefinitely. Add an explicit expiry comparison independent of
+signature validity.
+
+Closes #482"
+```
+
+### 15.2 The agentic-PR flood is a real cost, not a hypothetical
 
 By 2026 this stopped being theoretical: maintainers of major projects have described being overwhelmed by low-effort, AI-generated pull requests — verbose diffs with descriptions the submitter can't explain when asked, "fixes" for issues that don't exist, and drive-by contributions optimized to look mergeable rather than to be correct. The Jazzband Python collective shut down citing the unsustainable volume of AI-generated spam; curl's maintainer canceled its bug-bounty program because it had become a magnet for low-effort AI-assisted submissions. This is the same "plausibility over correctness" signature from §1, now arriving as a volume problem for reviewers, not just a quality problem for one codebase.
 
@@ -357,6 +400,7 @@ AI is a fast junior pair-programmer, not an oracle. To avoid shipping its slop:
 - [ ] Tests exist and could genuinely fail; edges + a regression test for fixed bugs.
 - [ ] Comments explain *why* and are true; public APIs documented (with units).
 - [ ] I can explain every line of this PR without re-reading it for the first time in review.
+- [ ] Commit messages are imperative, explain *why*, and would make sense to someone bisecting this in a year.
 
 **The gut check**
 - [ ] Could a generic prompt have produced this without knowing the real requirements?
