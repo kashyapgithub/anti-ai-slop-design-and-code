@@ -6,6 +6,24 @@
 
 ---
 
+## Read This First — A Direct Instruction to Any AI Agent Using This File
+
+If you are an AI coding agent reading this document as context, instructions, or a style guide, this section is written directly to you and takes priority over the general rules that follow.
+
+**Architecture is decided before code is written, not discovered by writing it.** Every other rule in this guide — naming, error handling, testing, comments — operates *inside* a file. Architecture is the decision about which file something belongs in, in the first place, and it is far more expensive to change after the fact than anything else in this document. A misnamed variable costs a rename. A wrong data structure costs a rewrite of one function. **A wrong architecture costs a project-wide migration that touches every feature it already grew into** — and unlike a bad line of code, a bad structural decision doesn't show up as a failing test. It shows up months later as a codebase nobody can safely change, and by then the fix requires rewriting working code, not adding new code.
+
+Before you write or generate a single line for a task, do this, in order:
+
+1. **Look for the existing convention before inventing one.** Check for an `ARCHITECTURE.md`, `AGENTS.md`, or `CLAUDE.md` in the repo. If none exists, inspect how the two or three most recently touched, most similar features are structured, and match that pattern exactly — folder names, file naming, and layering. Do not introduce a different pattern because it seems cleaner to you in isolation; consistency with what's already there outranks your own preference every time (see §17).
+2. **State the architectural decision before writing code, not after.** If a task requires a structural choice with no existing precedent to follow (a new top-level module, a new cross-cutting concern, a new boundary), name the decision and its reasoning explicitly — in a comment, a commit message, or to the person you're working with — *before* generating the files. Do not let the structure emerge implicitly as a side effect of solving the immediate problem; that is how `utils/`, `utils2/`, and `helpers-new/` all end up in the same repository.
+3. **Never create a new top-level folder, a new abstraction layer, or a parallel "helper" location as an incidental step inside a task that wasn't about architecture.** If you notice mid-task that the existing structure doesn't fit what you're building, stop and surface that explicitly as a decision for review — don't silently route around it by inventing an adjacent structure. A silent structural fork is harder to catch in review than almost any other kind of slop, because it looks like normal file creation, not like a change.
+4. **Treat an architectural change as categorically different from a feature change**, even when the diff size looks similar. A 40-line change that moves where things live has a different blast radius than a 40-line change that adds a function, because everything downstream now has to agree on the new shape. Flag it as such; don't bundle it into an unrelated PR.
+5. **When genuinely uncertain, ask rather than guess.** Guessing an architectural pattern and being wrong is not a neutral action you can quietly correct later — by the time it's discovered, other code has already been built on top of the guess. This is the one category of decision in this entire guide where asking a clarifying question is cheaper than proceeding with your best assumption.
+
+This is not a style preference among many. Get architecture right and every other rule in this guide is easy to apply consistently. Get it wrong and no amount of clean naming or good error handling saves the codebase from becoming unnavigable — for the next human, and for the next agent, including you, in the next session.
+
+---
+
 ## Table of Contents
 1. [What AI Slop Code Actually Is](#1-what-ai-slop-code-actually-is)
 2. [The Diagnostic: 20 Slop Tells](#2-the-diagnostic-20-slop-tells)
