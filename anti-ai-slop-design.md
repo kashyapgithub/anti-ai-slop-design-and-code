@@ -68,6 +68,19 @@ If you can check three or more of these, you're looking at slop.
 19. Placeholder images that are obviously stock or obviously AI (mangled hands/text).
 20. No accessibility: fails contrast, no focus rings, no reduced-motion handling.
 
+### 2.1 The 2026 Addendum: The Post-Generative Tells
+
+By 2026, "AI slop" has a specific, widely recognized visual signature — designers and developers can name the tells on sight, and it has become its own backlash. A few new ones worth naming explicitly:
+
+21. **The Tailwind indigo gradient specifically.** The blue-to-purple hero gradient traces to a single default (`indigo-500`) that got baked into millions of tutorials and templates, which then trained the models that now reproduce it by default. It's not "a gradient is bad" — it's that this *exact, unchosen* gradient signals nobody made a color decision.
+22. **The bento grid as a reflex.** A useful layout pattern for genuinely heterogeneous content, now stamped onto every dashboard and pricing page regardless of whether the content has that shape.
+23. **"Liquid glass" / glassmorphism as default chrome.** Frosted, translucent panels applied everywhere rather than where depth communicates real z-axis meaning — a trend accelerated by 2025's OS-level glass aesthetics and now in visible backlash.
+24. **Icon-set monoculture.** Lucide or Hero Icons on every single project isn't wrong by itself, but combined with the rest of the checklist it's a tell that no one considered a custom or distinctive icon language.
+25. **The pill badge above the headline.** A small rounded label ("✨ New", "Now in beta") floating above a centered hero headline — vanishingly rare in hand-designed pages before ~2023, ubiquitous in generated ones since.
+26. **Distributional convergence.** The deeper mechanism behind all of the above: a model predicting the statistically average design *is* the model doing its job correctly — the average of millions of landing pages is a centered hero, a blue button, and three cards. "Looks AI-generated" is downstream of "looks like the mean," which is exactly what an uninstructed model will produce every time.
+
+The stakes are not just aesthetic. Sites that read as generic, templated AI output have been observed converting dramatically worse than differentiated ones — genericness is a business cost, not just a taste problem.
+
 ---
 
 ## 3. First Principles
@@ -324,6 +337,15 @@ Non-slop is a process outcome, not luck.
 6. **Test with humans.** Five users surface ~80% of usability issues (Nielsen). Watch, don't ask.
 7. **Iterate; subtract.** The last 20% of polish (and the deletions) is what separates authored from generated.
 
+### 12.1 If you're prompting a model, constrain it before you prompt it
+
+A generic instruction ("build a landing page") hands every taste decision to the model at once, and per §2.1 it will fill all of them with the statistical mean. The fix follows directly from §3.3: give the tool the same constraints you'd give a junior designer.
+
+- **Supply the real inputs before generation**: an actual typeface (not "a modern sans"), an actual palette pulled from the brand (not "blue, professional"), a named layout principle, and a tone of voice.
+- **Write down the bans explicitly** if a tool keeps reverting to defaults: no centered-hero-as-default, no unearned glassmorphism, no icon set chosen by popularity, no gradient without a stated reason.
+- **Treat the first generation as a draft to push past, not a deliverable.** The teams producing distinctive work with these tools are the ones editing the output hardest, not the ones with the best prompt.
+- **Persist the constraints as reusable project context** (a style guide, a tokens file, a written "taste" brief) rather than re-typing them per prompt — consistency across a whole product depends on the constraints outliving any single conversation.
+
 ---
 
 ## 13. The Anti-Slop Review Checklist
@@ -379,6 +401,8 @@ Non-slop is a process outcome, not luck.
 - Refactoring UI (Wathan & Schoger) — practical UI heuristics
 - Laws of UX (lawsofux.com) — Fitts, Hick, Jakob, Gestalt, etc.
 - Material Design & Apple Human Interface Guidelines — as references to understand, not to copy
+- Creative Boom and similar design-press coverage of the 2025–2026 "AI slop" backlash (gradients, glassmorphism, bento grids, caricature illustration)
+- eMarketer's forecasts on AI-generated web content share — context for why distinctiveness is becoming a competitive requirement, not a nicety
 
 ---
 

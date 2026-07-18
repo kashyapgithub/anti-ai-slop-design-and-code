@@ -78,6 +78,16 @@ Three or more and you're reading slop.
 **Consistency**
 20. Mixed naming, quotes, and patterns within one file; ignores project conventions.
 
+### 2.1 The 2026 Addendum: Agentic-Era Tells
+
+As of 2026, generation happens mostly through agentic tools (Claude Code, Copilot Workspace, Cursor agents) that write, run, and commit code with less human review per line than ever. That shifts *where* slop hides:
+
+21. **Phantom dependencies.** A package name that looks plausible (`aws-helper-sdk`, `fastapi-middleware`) but doesn't exist in the registry, or exists but isn't the one the model meant — see [§11.1](#111-slopsquatting-verify-every-ai-suggested-dependency).
+22. **Invented flags and APIs.** A CLI flag, config key, or library method that sounds right but was never shipped — the model pattern-matched from a similar tool instead of checking the current docs.
+23. **Config-only "fixes."** An agent asked to fix a bug edits a linter rule, a test threshold, or a CI skip list instead of the code, making the symptom disappear without touching the cause.
+24. **Unrun code.** Multi-file changes where the agent never actually executed the code path it wrote — no build, no test run, no manual check — because the harness rewards a plausible diff over a verified one.
+25. **Silent scope creep.** An agent asked for one function also "helpfully" refactors adjacent files, renames variables, or reformats unrelated code, burying the real change in noise the reviewer has to untangle.
+
 ---
 
 ## 3. First Principles
@@ -232,6 +242,17 @@ Treat every external input as hostile. (OWASP Top 10 is the baseline reading.)
 - **Don't leak internals** in error responses (stack traces, SQL, versions) to end users.
 - Keep dependencies patched; most breaches exploit known, unpatched CVEs.
 
+### 11.1 Slopsquatting: verify every AI-suggested dependency
+
+Code-generating models sometimes recommend packages that don't exist — a **hallucinated dependency**. Studies of production models put the hallucination rate for package names at roughly one in five suggestions across large samples, and the fabricated names are not random: models converge on the same plausible-sounding strings (conflating two real packages, borrowing a name from another language's ecosystem, or inventing a specific-sounding utility). Attackers exploit this convergence directly — a technique security researchers named **slopsquatting** — by registering the exact names models are known to hallucinate and waiting for `pip install` or `npm install` to hand them a foothold. This has already happened in the wild, not just in theory: a hallucinated `huggingface-cli` PyPI package pulled tens of thousands of downloads before anyone flagged it.
+
+Treat every AI-suggested package the same way you'd treat a link from a stranger:
+- **Look it up before installing it.** Confirm the package exists on the real registry (PyPI, npm, crates.io), check its maintainer, release history, and download count — a two-week-old package with one maintainer and a name that exactly matches your prompt is a red flag.
+- **Never let an agent auto-install and auto-run in the same step** without a human or a lockfile-diff gate in between, especially in CI or any environment with credentials (crypto keys, cloud tokens) in scope.
+- **Pin dependencies and diff lockfile changes in review** — a new, unexpected entry in `package-lock.json` or `requirements.txt` is exactly the signal this attack is designed to slip past.
+- **Prefer tools with real-time registry validation** (MCP-backed package lookups, IDE plugins that check names against the registry) over raw model output for install commands.
+- This is a supply-chain risk category distinct from typosquatting: the attacker isn't betting on your typo, they're betting on the model's confident wrongness.
+
 ---
 
 ## 12. Concurrency & Resource Safety
@@ -287,6 +308,11 @@ AI is a fast junior pair-programmer, not an oracle. To avoid shipping its slop:
 - **Ask it to handle failure modes and write real tests**, then check those tests actually exercise the edges.
 - **Never paste secrets** into prompts, and never let generated code hardcode them.
 - Treat generated code exactly as you'd treat a stranger's PR: read it critically, test it, and refactor it into the codebase's voice.
+- **Verify before you install.** Any package name an agent suggests gets checked against the real registry first — see [§11.1](#111-slopsquatting-verify-every-ai-suggested-dependency).
+- **"Vibe coding" (Karpathy's term for prompting toward a result without reading the diff) is fine for throwaway prototypes and dangerous for anything that ships.** The line between the two is whether a human read and understood every line before it merged.
+- **Require the agent to run what it wrote.** A diff that was never built, executed, or tested is a guess with good formatting, not a change.
+- **Scope agentic changes tightly.** Ask for one function, one file, one concern per turn; a multi-file "helpful" refactor you didn't ask for is scope creep that hides the real change.
+- **Watch for the fix-the-symptom pattern**: an agent that makes a failing test pass by loosening the assertion, or a lint error disappear by disabling the rule, has produced slop that looks like a fix.
 
 ---
 
@@ -337,6 +363,9 @@ AI is a fast junior pair-programmer, not an oracle. To avoid shipping its slop:
 - OWASP — *Top 10* and the Cheat Sheet Series (owasp.org)
 - Google — *Engineering Practices / Code Review Developer Guide*
 - The Zen of Python (`import this`) and language-specific style guides (PEP 8, Effective Go, Airbnb JS, Rust API Guidelines)
+- Seth Larson's writing on **slopsquatting** and supply-chain risk from hallucinated packages
+- OWASP's guidance on LLM-assisted development risk (part of the broader OWASP Top 10 for LLM Applications work)
+- Simon Willison's writing on agentic coding and "vibe coding" boundaries (simonwillison.net)
 
 ---
 
