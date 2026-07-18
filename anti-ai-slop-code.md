@@ -23,9 +23,10 @@
 14. [Testing](#14-testing)
 15. [Git, Reviews & Collaboration](#15-git-reviews--collaboration)
 16. [Using AI Without Producing Slop](#16-using-ai-without-producing-slop)
-17. [The Anti-Slop Review Checklist](#17-the-anti-slop-review-checklist)
-18. [Case Study: Redis — Craft at the Systems-Programming Level](#18-case-study-redis--craft-at-the-systems-programming-level)
-19. [Further Study](#19-further-study)
+17. [Architecture & Project Structure](#17-architecture--project-structure)
+18. [The Anti-Slop Review Checklist](#18-the-anti-slop-review-checklist)
+19. [Case Study: Redis — Craft at the Systems-Programming Level](#19-case-study-redis--craft-at-the-systems-programming-level)
+20. [Further Study](#20-further-study)
 
 ---
 
@@ -370,12 +371,70 @@ AI is a fast junior pair-programmer, not an oracle. To avoid shipping its slop:
 
 ---
 
-## 17. The Anti-Slop Review Checklist
+## 17. Architecture & Project Structure
+
+Everything so far in this guide operates *inside* a file. None of it saves you if the folders themselves are slop — and folder structure is one of the places AI agents fail most visibly, because a codebase's architecture is rarely written down anywhere the agent can read it. Left with no explicit convention, an agent (or an under-specified prompt to one) will default to inventing structure on the fly, run after run, which is how projects end up with `utils/`, `utils2/`, `helpers/`, and `common/` all doing the same job, or a `services/` folder next to a `service/` folder from a different session. That's architecture-level slop: plausible-looking, superficially organized, and quietly incoherent.
+
+This isn't a hypothetical cost. Google's 2025 DORA report found that as AI adoption rose across surveyed teams, bug rates, code review time, and average pull request size all climbed alongside it — and unclear architecture is one of the mechanisms that makes agent-assisted changes sprawl wider than they need to. An agent operating against a codebase with no legible structure has no way to keep a change small, because it can't tell what's actually inside the boundary of what it was asked to touch.
+
+### 17.1 Structure by what the app does, not by what framework it uses
+
+The classic failure mode predates AI but AI reproduces it reflexively: **package/folder by technical layer** — `controllers/`, `services/`, `models/`, `repositories/`, `utils/` — with every feature's code smeared across all five. To understand or change one feature ("billing," "onboarding," "search") you have to open five unrelated folders and mentally reassemble it yourself. A directory listing of a layered project tells you what framework it uses; it tells you nothing about what the product *does*.
+
+**Package/folder by feature** (also called a vertical slice) inverts this: each feature owns its own folder containing everything specific to it — its endpoint, its business logic, its data access, its tests — with only genuinely cross-cutting code (auth middleware, a DB client, shared types) pulled into a common layer.
+```
+# layer-first (scatters one feature across five folders)
+src/
+  controllers/  billingController.ts  userController.ts  searchController.ts
+  services/     billingService.ts     userService.ts      searchService.ts
+  repositories/ billingRepo.ts        userRepo.ts          searchRepo.ts
+
+# feature-first (a feature is one folder, deletable and reviewable as a unit)
+src/
+  features/
+    billing/    routes.ts  service.ts  repo.ts  billing.test.ts
+    onboarding/ routes.ts  service.ts  repo.ts  onboarding.test.ts
+    search/     routes.ts  service.ts  repo.ts  search.test.ts
+  shared/       db-client.ts  auth-middleware.ts  types.ts
+```
+**Why this matters more, not less, with AI agents in the loop:** a feature that owns its own vertical slice fits in one context window and can be understood, changed, and tested without the agent (or a human reviewer) having to reconstruct how five scattered files relate. A layered structure forces exactly the kind of wide, speculative, multi-file "helpful" edit this guide already flags as scope creep (§16) — the agent touches five folders because the architecture made that the only way to finish one feature.
+
+This is the same idea Robert C. Martin named **"screaming architecture"**: your top-level folder structure should scream what the *application* is, not what web framework or ORM it happens to use. If you can't tell a codebase apart from a generic framework tutorial by looking at its folder names, the structure isn't carrying any information.
+
+### 17.2 Don't earn Clean/Hexagonal Architecture before you have the complexity that justifies it
+
+Layered, ports-and-adapters, or fully "Clean Architecture" structures (domain/application/infrastructure boundaries, dependency inversion at every seam) are real, valuable patterns — for a codebase that has outgrown a flat structure. Applying them to a project with three endpoints and one database is the architectural version of the five-layer-abstraction slop tell in §2 (`Factory→Manager→Service→Helper→Util` over 10 lines): ceremony standing in for judgment.
+
+The practical sequence that avoids both failure modes:
+1. **Start feature-first, flat, and boring.** One folder per feature; no interfaces or abstraction layers until something concrete needs them (§5's Rule of Three still applies at the architecture level, not just the function level).
+2. **Let internal layering emerge inside a feature once it's genuinely complex** — a feature folder can have its own small `domain/`/`adapters/` split without imposing that split project-wide.
+3. **Only promote a pattern to project-wide convention once two or three features have independently needed it.** A convention adopted after the third real case is a decision. A convention adopted on day one, before any feature justified it, is a guess wearing architecture's clothes.
+
+### 17.3 Module boundaries are enforced by encapsulation, not by folder names alone
+
+A feature folder is not a boundary unless most of what's inside it is *not* importable from outside. Prefer visibility rules the language actually enforces (`internal` in Go, package-private in Java/Kotlin, an explicit barrel `index.ts` that only re-exports the intentional public surface in TypeScript) over a folder name that's a boundary in name only. If any file in any feature can `import` any file in any other feature directly, the folders are documentation, not architecture — nothing stops the coupling they were meant to prevent.
+
+### 17.4 Give AI agents the convention explicitly — don't make them infer it
+
+An agent without an explicit map of your structure will pattern-match against the most common structure it's seen in training, which regresses to the generic layered default — the same "distributional convergence" this guide's companion design doc names for visual defaults (§2.1 there) shows up here as *structural* convergence. The fix is direct:
+- **Write the architecture down** in a file the agent actually reads at the start of a session (a `CLAUDE.md`/`AGENTS.md`/`ARCHITECTURE.md`, whatever your tooling supports) — name the pattern (feature-first, layered, hexagonal), where new code of each kind goes, and what's off-limits to touch casually.
+- **Point at one existing feature as the reference example** ("new features follow the shape of `features/billing/`") — agents follow a concrete precedent far more reliably than an abstract rule.
+- **Treat a structural inconsistency the same as a code-quality bug in review**: if an agent added a new top-level folder, a new "helper" location, or duplicated an existing pattern under a new name, that's a structural regression to catch before merge, not a style nitpick to wave through.
+- **The "comprehension gate" applies to structure too.** Before agent-generated code merges, someone should be able to say *where this lives and why it lives there* in one sentence — not just what the code does. If the answer is "the agent put it there," that's the same failure as not being able to explain a line of logic (§16) — just one level up.
+
+---
+
+## 18. The Anti-Slop Review Checklist
 
 **Fit & simplicity**
 - [ ] Matches the project's conventions, formatter, and linter (all green).
 - [ ] Simplest correct version — no premature abstraction, no dead ceremony.
 - [ ] Every line justifies itself; no commented-out code or leftover `console.log`.
+
+**Architecture**
+- [ ] New code lives where the documented convention (or the nearest existing feature) says it should — not a new top-level folder invented for this change.
+- [ ] I can say in one sentence where this lives and why, without saying "the agent put it there."
+- [ ] No duplicate `utils`/`helpers`/`common` locations doing the same job under a different name.
 
 **Naming & structure**
 - [ ] Names state intent (verbs for functions, questions for booleans).
@@ -409,11 +468,11 @@ AI is a fast junior pair-programmer, not an oracle. To avoid shipping its slop:
 
 ---
 
-## 18. Case Study: Redis — Craft at the Systems-Programming Level
+## 19. Case Study: Redis — Craft at the Systems-Programming Level
 
 Every principle above is easier to see in a codebase that actually lives by it. Redis (the C core, created by Salvatore Sanfilippo — "antirez" — and maintained since as a widely used, heavily audited piece of infrastructure) is one of the most consistently cited examples of readable systems code in the industry: a database written in plain ANSI C, handling millions of ops/sec in production at companies of every size, that engineers still hold up as something to *read*, not just use. It's worth studying not because it's exotic, but because it's the same rules in this guide, applied without compromise, at a scale most projects never reach.
 
-### 18.0 Why this specific repo, and not some other database
+### 19.0 Why this specific repo, and not some other database
 
 It's worth being precise about *why* Redis is the one people point to, rather than treating the reputation as received wisdom:
 
@@ -423,7 +482,7 @@ It's worth being precise about *why* Redis is the one people point to, rather th
 - **The protocol is simple enough that reimplementing it is a standard learning exercise.** RESP (the Redis Serialization Protocol) is deliberately simple to parse, and "build your own Redis" is now a well-known teaching project — platforms built specifically around recreating real infrastructure from scratch use it as a flagship challenge, and standalone guides walk through implementing a Redis clone as a way to learn TCP servers, event loops, and wire protocols. A large fraction of the engineers who talk about Redis's code quality have, at some point, tried to reproduce a piece of it themselves — that hands-on familiarity is a big part of why the opinions about it are so specific and consistent, rather than secondhand.
 - **It's cited as a counter-example to a specific, common failure mode.** A lot of infrastructure software earns a reputation for being hard to read specifically *because* it grew multi-threaded, multi-abstraction-layer complexity to chase scale. Redis is discussed disproportionately often in these conversations because it's a rare example of software that reached massive real-world scale while making the opposite trade at almost every decision point — which is the entire reason it appears in this guide rather than as a passing reference.
 
-### 18.1 Architecture is a decision, defended in writing — not a default
+### 19.1 Architecture is a decision, defended in writing — not a default
 
 Redis's command execution is single-threaded. In 2025-era engineering culture, where "just add more threads" is often the reflex, that reads as a constraint. It's actually the load-bearing decision that makes the rest of the system simple:
 - **No locks, because there's nothing to lock.** A single thread executing commands sequentially makes every operation atomic by construction — no mutexes, no lock-ordering bugs, no deadlocks in the command path. An entire category of concurrency bugs (§12) is eliminated architecturally, not managed carefully.
@@ -432,7 +491,7 @@ Redis's command execution is single-threaded. In 2025-era engineering culture, w
 
 The lesson isn't "always be single-threaded." It's: **name your architecture's actual bottleneck before you design around a bottleneck you assume you'll have.**
 
-### 18.2 Comments earn their place — they don't decorate the code
+### 19.2 Comments earn their place — they don't decorate the code
 
 Sanfilippo has written and spoken at length about a self-imposed discipline for comments that's close to the inverse of slop-comment habits (§9): most comments in the Redis source are what he calls *guide comments* — not restating what a line does, but orienting a reader before they process a non-obvious block, the same job a paragraph break does in prose. Function-level comments are written so the reader can treat the function as a black box afterward — a contract, not a description:
 ```c
@@ -445,31 +504,31 @@ That's a *function comment*: it tells you the contract and return semantics so y
 
 New modules in the Redis codebase often open with a short block explaining the chosen algorithm and — just as importantly — **what alternatives were rejected and why**. That's the single highest-leverage comment a systems codebase can have, because it's the one piece of context version control genuinely doesn't preserve well: *why this shape and not the obvious one.*
 
-### 18.3 Small, custom data structures — chosen deliberately, not out of NIH
+### 19.3 Small, custom data structures — chosen deliberately, not out of NIH
 
 Section 10 of this guide says "reach for the standard library first." Redis's `sds` (Simple Dynamic Strings), `rax` (radix tree), and its various compact list/hash encodings look, on the surface, like a violation of that rule — hand-rolled containers instead of whatever C's minimal standard library offers. It isn't a violation; it's the exception that rule already carves out: **build custom only when a generic container would hide the exact performance or memory-layout property the system depends on, and document why.**
 - `sds` exists because C strings don't carry a length, aren't binary-safe, and reallocate unpredictably — properties a database storing arbitrary binary values genuinely cannot use a `char*` for. That's a stated, technical justification, not a preference.
 - The distinction from slop's reinvented-utility tell (§2, tell #13: reinventing `debounce`/`uuid`/date math) is intent and documentation. Reinventing `uuid` because you didn't check for a library is slop. Building a custom string type because the standard one is provably wrong for your access pattern, and writing down why, is engineering.
 
-### 18.4 Small functions, verbs that describe exactly one job
+### 19.4 Small functions, verbs that describe exactly one job
 
 Redis functions are kept short by convention — the moment one grows past roughly 100 lines, the project's own norms treat that as a signal to split it (§5). Names read as precise, active claims about behavior — `clientHasPendingReplies`, `raxSeekGreatest` — not `handleClient` or `processData` (§4's naming slop tells). A function name in this codebase is close to a spec: if you can guess the return type and side effects from the name alone, the naming did its job.
 
-### 18.5 Treat the first version as a draft — rewrite before merging
+### 19.5 Treat the first version as a draft — rewrite before merging
 
 Sanfilippo has compared writing a new component to drafting a paragraph in a novel: you write it, then you rewrite it once you actually understand the shape of the problem, because the first version is where you were still discovering the design. This is §3.5 ("make the change easy, then make the easy change") applied to greenfield work specifically — plan for the first implementation of anything nontrivial to be thrown away or substantially rewritten once it's proven correct, not shipped because it happened to work.
 
-### 18.6 Even the creator doesn't trust AI-generated systems code unread
+### 19.6 Even the creator doesn't trust AI-generated systems code unread
 
 In 2026, Sanfilippo published a detailed account of building a new Redis data type with heavy AI assistance (drafting specs, generating stress tests, reviewing algorithms) — and the account is a useful antidote to vibe-coding hype precisely because of who wrote it. His summary: *for high-quality systems programming, you still have to be fully involved.* The project took roughly four months with AI assistance, from the original creator of the software, not a novice — and a large share of that time was reading the generated code line by line, finding design errors that "superficially worked," and rewriting modules by hand once testing revealed they weren't actually solid. That's §16 of this guide, demonstrated by someone with no reason to overstate the caution: **AI can carry you into complexity you'd otherwise skip, but verification and rewriting are still the job, not a step you delegate.**
 
-### 18.7 Minimal, legible build and dependency footprint
+### 19.7 Minimal, legible build and dependency footprint
 
 Redis builds with a single `make` invocation and has historically kept its runtime dependency footprint close to libc — a deliberate rejection of the "five build tools and a dozen transitive dependencies" default that afflicts a lot of modern software (§10). Every additional build step or dependency is treated as something that has to earn its place and be explained, not something you reach for by default. This is the same principle as §10's "don't add a heavyweight dep for a three-line need" — held to a stricter standard because the thing being built is infrastructure other people's infrastructure depends on.
 
 ---
 
-## 19. Further Study
+## 20. Further Study
 
 - Robert C. Martin — *Clean Code* (read critically) & *The Clean Coder*
 - Andrew Hunt & David Thomas — *The Pragmatic Programmer*
@@ -482,6 +541,8 @@ Redis builds with a single `make` invocation and has historically kept its runti
 - The Zen of Python (`import this`) and language-specific style guides (PEP 8, Effective Go, Airbnb JS, Rust API Guidelines)
 - Seth Larson's writing on **slopsquatting** and supply-chain risk from hallucinated packages
 - OWASP's guidance on LLM-assisted development risk (part of the broader OWASP Top 10 for LLM Applications work)
+- Robert C. Martin — "Screaming Architecture" (on structuring by what an application does, not by its framework)
+- Google's DORA (DevOps Research and Assessment) reports — annual data on how AI adoption is actually affecting delivery performance and code quality across real teams
 - Simon Willison's writing on agentic coding and "vibe coding" boundaries (simonwillison.net)
 - Salvatore Sanfilippo (antirez) — blog posts on code comments and system-programming practice (antirez.com/news), and the Redis source itself (github.com/redis/redis) as a primary reading text, not just a dependency
 - The Redis `MANIFESTO` file in the repository itself (github.com/redis/redis/blob/unstable/MANIFESTO) — a rare case of a widely used piece of infrastructure stating its design values in writing
