@@ -295,6 +295,16 @@ Treat every AI-suggested package the same way you'd treat a link from a stranger
 - **Review for correctness, edge cases, security, and readability** — not just style; automate style with linters/formatters (ESLint/Prettier, Ruff/Black, gofmt) so humans discuss substance.
 - Wire up **CI**: build, lint, type-check, tests, and security scan on every PR. Green means green.
 
+### 15.1 The agentic-PR flood is a real cost, not a hypothetical
+
+By 2026 this stopped being theoretical: maintainers of major projects have described being overwhelmed by low-effort, AI-generated pull requests — verbose diffs with descriptions the submitter can't explain when asked, "fixes" for issues that don't exist, and drive-by contributions optimized to look mergeable rather than to be correct. The Jazzband Python collective shut down citing the unsustainable volume of AI-generated spam; curl's maintainer canceled its bug-bounty program because it had become a magnet for low-effort AI-assisted submissions. This is the same "plausibility over correctness" signature from §1, now arriving as a volume problem for reviewers, not just a quality problem for one codebase.
+
+Practical implications:
+- **A large, sprawling PR with a fluent description is not evidence of quality** — description-to-diff similarity is easy for a model to produce and easy to mistake for rigor. Read the diff; don't grade the prose.
+- **Be able to explain your own PR.** If you used an agent, you should be able to answer "why this approach and not X" without re-reading the code for the first time in the review conversation.
+- **Maintainers are within their rights to require a human-legible rationale** and to close low-effort AI-generated contributions without extensive engagement — protecting reviewer time is not gatekeeping.
+- **Don't let commit-message and PR-description generators substitute for understanding.** They're fine for formatting a message you already understand; they're slop generators when used to describe a diff you haven't read.
+
 ---
 
 ## 16. Using AI Without Producing Slop
@@ -341,10 +351,12 @@ AI is a fast junior pair-programmer, not an oracle. To avoid shipping its slop:
 **Security**
 - [ ] No hardcoded secrets; injection surfaces parameterized/escaped.
 - [ ] No home-grown crypto/auth; least privilege; internals not leaked in errors.
+- [ ] AI-suggested dependencies verified against the real registry before install; lockfile diff reviewed.
 
 **Tests & docs**
 - [ ] Tests exist and could genuinely fail; edges + a regression test for fixed bugs.
 - [ ] Comments explain *why* and are true; public APIs documented (with units).
+- [ ] I can explain every line of this PR without re-reading it for the first time in review.
 
 **The gut check**
 - [ ] Could a generic prompt have produced this without knowing the real requirements?

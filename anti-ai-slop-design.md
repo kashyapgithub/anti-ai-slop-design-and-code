@@ -309,6 +309,12 @@ Accessible design is *better* design, and inaccessible beauty is failure. Target
 - Structure with real landmarks and a logical heading outline (`h1→h2→h3`), not `div`s styled to look like headings.
 - Test with a **keyboard only** and a **screen reader** (VoiceOver, NVDA), not just your eyes.
 
+### 10.1 Overlay widgets are the accessibility version of slop
+
+A one-line "AI-powered accessibility widget" bolted onto a site is the accessibility equivalent of a narration comment: it looks like effort was spent without the underlying problem being fixed. These overlays modify the page client-side without touching the source HTML, and by 2026 the evidence against them is concrete rather than anecdotal: hundreds of businesses running overlay widgets have been sued anyway, since the underlying markup a screen reader or an automated scanner sees is unchanged; overlays frequently conflict with users' own assistive technology rather than complementing it; and a major overlay vendor was fined by the FTC for falsely claiming its tool could make any website WCAG-compliant. Plaintiffs' attorneys have started citing overlay usage itself as evidence a company knew about accessibility requirements and chose the cheapest possible response.
+
+The fix is the same principle as everywhere else in this guide: **the source has to actually be correct.** Semantic HTML, real focus management, and genuine keyboard operability aren't optional extras an overlay can paper over after the fact — they're the actual work. If a preference widget (font size, contrast toggle) adds real value on top of a genuinely accessible base, that's fine; sold as *the* compliance mechanism, it isn't.
+
 ---
 
 ## 11. Design Tokens & Systems
@@ -379,11 +385,13 @@ A generic instruction ("build a landing page") hands every taste decision to the
 **Motion & a11y**
 - [ ] Motion carries meaning; timing eased 150–300ms; reduced-motion honored.
 - [ ] Keyboard-navigable, screen-reader tested, targets ≥24px, semantic HTML.
+- [ ] Accessibility is fixed at the source, not bolted on with an overlay widget.
 
 **The gut check**
 - [ ] Could a generic prompt have produced this exact screen? If yes, push further.
 - [ ] Is there at least one deliberate, memorable moment?
 - [ ] Would a designer I respect see *decisions*, not *defaults*?
+- [ ] If I generated a first draft with AI, did I give it real constraints — or did I let it default to indigo gradients, bento grids, and stock icons?
 
 ---
 
