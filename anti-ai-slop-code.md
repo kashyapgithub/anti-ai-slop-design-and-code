@@ -24,7 +24,8 @@
 15. [Git, Reviews & Collaboration](#15-git-reviews--collaboration)
 16. [Using AI Without Producing Slop](#16-using-ai-without-producing-slop)
 17. [The Anti-Slop Review Checklist](#17-the-anti-slop-review-checklist)
-18. [Further Study](#18-further-study)
+18. [Case Study: Redis — Craft at the Systems-Programming Level](#18-case-study-redis--craft-at-the-systems-programming-level)
+19. [Further Study](#19-further-study)
 
 ---
 
@@ -408,7 +409,57 @@ AI is a fast junior pair-programmer, not an oracle. To avoid shipping its slop:
 
 ---
 
-## 18. Further Study
+## 18. Case Study: Redis — Craft at the Systems-Programming Level
+
+Every principle above is easier to see in a codebase that actually lives by it. Redis (the C core, created by Salvatore Sanfilippo — "antirez" — and maintained since as a widely used, heavily audited piece of infrastructure) is one of the most consistently cited examples of readable systems code in the industry: a database written in plain ANSI C, handling millions of ops/sec in production at companies of every size, that engineers still hold up as something to *read*, not just use. It's worth studying not because it's exotic, but because it's the same rules in this guide, applied without compromise, at a scale most projects never reach.
+
+### 18.1 Architecture is a decision, defended in writing — not a default
+
+Redis's command execution is single-threaded. In 2025-era engineering culture, where "just add more threads" is often the reflex, that reads as a constraint. It's actually the load-bearing decision that makes the rest of the system simple:
+- **No locks, because there's nothing to lock.** A single thread executing commands sequentially makes every operation atomic by construction — no mutexes, no lock-ordering bugs, no deadlocks in the command path. An entire category of concurrency bugs (§12) is eliminated architecturally, not managed carefully.
+- **The tradeoff is stated, not hidden.** Redis is memory- and network-bound for typical workloads, not CPU-bound, so a second thread would mostly coordinate rather than parallelize real work — until you run a genuinely slow command (`KEYS` on a huge keyspace), which blocks everything, a cost the design accepts explicitly rather than papering over. (Since Redis 6, I/O — reading and writing sockets — was later split onto multiple threads specifically because that part of the workload *does* parallelize well, while command execution stayed single-threaded because atomicity was the point.)
+- **This is §3.3 ("prefer boring, obvious code") at the architectural level.** The interesting decision wasn't adding complexity to go faster; it was refusing complexity because the workload didn't need it, and writing down why.
+
+The lesson isn't "always be single-threaded." It's: **name your architecture's actual bottleneck before you design around a bottleneck you assume you'll have.**
+
+### 18.2 Comments earn their place — they don't decorate the code
+
+Sanfilippo has written and spoken at length about a self-imposed discipline for comments that's close to the inverse of slop-comment habits (§9): most comments in the Redis source are what he calls *guide comments* — not restating what a line does, but orienting a reader before they process a non-obvious block, the same job a paragraph break does in prose. Function-level comments are written so the reader can treat the function as a black box afterward — a contract, not a description:
+```c
+/* Seek the greatest key in the subtree at the current node. Return 0 on
+ * out of memory, otherwise 1. This is an helper function for different
+ * iteration functions below. */
+int raxSeekGreatest(raxIterator *it) { ... }
+```
+That's a *function comment*: it tells you the contract and return semantics so you don't have to read the body to use it correctly. Compare it to a narration comment (§2, tell #1) — `// seeks the greatest key` — which tells you nothing the name didn't already. The difference is information density: does the comment let the reader stop reading, or does it just keep them company while they read anyway?
+
+New modules in the Redis codebase often open with a short block explaining the chosen algorithm and — just as importantly — **what alternatives were rejected and why**. That's the single highest-leverage comment a systems codebase can have, because it's the one piece of context version control genuinely doesn't preserve well: *why this shape and not the obvious one.*
+
+### 18.3 Small, custom data structures — chosen deliberately, not out of NIH
+
+Section 10 of this guide says "reach for the standard library first." Redis's `sds` (Simple Dynamic Strings), `rax` (radix tree), and its various compact list/hash encodings look, on the surface, like a violation of that rule — hand-rolled containers instead of whatever C's minimal standard library offers. It isn't a violation; it's the exception that rule already carves out: **build custom only when a generic container would hide the exact performance or memory-layout property the system depends on, and document why.**
+- `sds` exists because C strings don't carry a length, aren't binary-safe, and reallocate unpredictably — properties a database storing arbitrary binary values genuinely cannot use a `char*` for. That's a stated, technical justification, not a preference.
+- The distinction from slop's reinvented-utility tell (§2, tell #13: reinventing `debounce`/`uuid`/date math) is intent and documentation. Reinventing `uuid` because you didn't check for a library is slop. Building a custom string type because the standard one is provably wrong for your access pattern, and writing down why, is engineering.
+
+### 18.4 Small functions, verbs that describe exactly one job
+
+Redis functions are kept short by convention — the moment one grows past roughly 100 lines, the project's own norms treat that as a signal to split it (§5). Names read as precise, active claims about behavior — `clientHasPendingReplies`, `raxSeekGreatest` — not `handleClient` or `processData` (§4's naming slop tells). A function name in this codebase is close to a spec: if you can guess the return type and side effects from the name alone, the naming did its job.
+
+### 18.5 Treat the first version as a draft — rewrite before merging
+
+Sanfilippo has compared writing a new component to drafting a paragraph in a novel: you write it, then you rewrite it once you actually understand the shape of the problem, because the first version is where you were still discovering the design. This is §3.5 ("make the change easy, then make the easy change") applied to greenfield work specifically — plan for the first implementation of anything nontrivial to be thrown away or substantially rewritten once it's proven correct, not shipped because it happened to work.
+
+### 18.6 Even the creator doesn't trust AI-generated systems code unread
+
+In 2026, Sanfilippo published a detailed account of building a new Redis data type with heavy AI assistance (drafting specs, generating stress tests, reviewing algorithms) — and the account is a useful antidote to vibe-coding hype precisely because of who wrote it. His summary: *for high-quality systems programming, you still have to be fully involved.* The project took roughly four months with AI assistance, from the original creator of the software, not a novice — and a large share of that time was reading the generated code line by line, finding design errors that "superficially worked," and rewriting modules by hand once testing revealed they weren't actually solid. That's §16 of this guide, demonstrated by someone with no reason to overstate the caution: **AI can carry you into complexity you'd otherwise skip, but verification and rewriting are still the job, not a step you delegate.**
+
+### 18.7 Minimal, legible build and dependency footprint
+
+Redis builds with a single `make` invocation and has historically kept its runtime dependency footprint close to libc — a deliberate rejection of the "five build tools and a dozen transitive dependencies" default that afflicts a lot of modern software (§10). Every additional build step or dependency is treated as something that has to earn its place and be explained, not something you reach for by default. This is the same principle as §10's "don't add a heavyweight dep for a three-line need" — held to a stricter standard because the thing being built is infrastructure other people's infrastructure depends on.
+
+---
+
+## 19. Further Study
 
 - Robert C. Martin — *Clean Code* (read critically) & *The Clean Coder*
 - Andrew Hunt & David Thomas — *The Pragmatic Programmer*
@@ -422,6 +473,7 @@ AI is a fast junior pair-programmer, not an oracle. To avoid shipping its slop:
 - Seth Larson's writing on **slopsquatting** and supply-chain risk from hallucinated packages
 - OWASP's guidance on LLM-assisted development risk (part of the broader OWASP Top 10 for LLM Applications work)
 - Simon Willison's writing on agentic coding and "vibe coding" boundaries (simonwillison.net)
+- Salvatore Sanfilippo (antirez) — blog posts on code comments and system-programming practice (antirez.com/news), and the Redis source itself (github.com/redis/redis) as a primary reading text, not just a dependency
 
 ---
 
