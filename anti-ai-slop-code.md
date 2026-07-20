@@ -433,11 +433,14 @@ Closes #482"
 
 By 2026 this stopped being theoretical: maintainers of major projects have described being overwhelmed by low-effort, AI-generated pull requests — verbose diffs with descriptions the submitter can't explain when asked, "fixes" for issues that don't exist, and drive-by contributions optimized to look mergeable rather than to be correct. The Jazzband Python collective shut down citing the unsustainable volume of AI-generated spam; curl's maintainer canceled its bug-bounty program because it had become a magnet for low-effort AI-assisted submissions. This is the same "plausibility over correctness" signature from §1, now arriving as a volume problem for reviewers, not just a quality problem for one codebase.
 
+A 2026 academic study systematically analyzed over a thousand developer discussions of this problem on Reddit and Hacker News and framed it precisely: a **tragedy of the commons**, where an individual's productivity gain (ship faster with an agent) externalizes its cost onto reviewers and maintainers (verify what was shipped) — a cost the person shipping never has to pay themselves. The study's reviewers described the specific experience of opening a PR and being, in their words, effectively the first person to ever actually look at the code — and one team reported roughly 30 pull requests a day against six available reviewers. That ratio is the concrete, measurable shape of what "plausibility over correctness at scale" costs a real team.
+
 Practical implications:
 - **A large, sprawling PR with a fluent description is not evidence of quality** — description-to-diff similarity is easy for a model to produce and easy to mistake for rigor. Read the diff; don't grade the prose.
 - **Be able to explain your own PR.** If you used an agent, you should be able to answer "why this approach and not X" without re-reading the code for the first time in the review conversation.
 - **Maintainers are within their rights to require a human-legible rationale** and to close low-effort AI-generated contributions without extensive engagement — protecting reviewer time is not gatekeeping.
 - **Don't let commit-message and PR-description generators substitute for understanding.** They're fine for formatting a message you already understand; they're slop generators when used to describe a diff you haven't read.
+- **If you maintain something others contribute to, the mitigations forming across the industry in 2026 are converging on a few concrete moves**: hard PR-size limits, contribution templates that require the submitter to state what they tested and why, and — as a last resort — throttling or auto-closing low-effort external PRs. None of these are anti-AI; they're the same review discipline this guide already argues for, applied at the point where volume alone would otherwise defeat it.
 
 ---
 
@@ -453,7 +456,7 @@ AI is a fast junior pair-programmer, not an oracle. To avoid shipping its slop:
 - **Never paste secrets** into prompts, and never let generated code hardcode them.
 - Treat generated code exactly as you'd treat a stranger's PR: read it critically, test it, and refactor it into the codebase's voice.
 - **Verify before you install.** Any package name an agent suggests gets checked against the real registry first — see [§11.1](#111-slopsquatting-verify-every-ai-suggested-dependency).
-- **"Vibe coding" (Karpathy's term for prompting toward a result without reading the diff) is fine for throwaway prototypes and dangerous for anything that ships.** The line between the two is whether a human read and understood every line before it merged.
+- **"Vibe coding"** — Andrej Karpathy's February 2025 description of fully giving in to the vibes and forgetting the code even exists, later named a dictionary word of the year — **is fine for throwaway prototypes and dangerous for anything that ships.** The line between the two is whether a human read and understood every line before it merged. This isn't a fringe habit: by early 2026, a large majority of developers reported using or planning to use AI coding tools, and a substantial share of newly written code was AI-generated — which is exactly why the review discipline in this guide matters more now, not less.
 - **Require the agent to run what it wrote.** A diff that was never built, executed, or tested is a guess with good formatting, not a change.
 - **Scope agentic changes tightly.** Ask for one function, one file, one concern per turn; a multi-file "helpful" refactor you didn't ask for is scope creep that hides the real change.
 - **Watch for the fix-the-symptom pattern**: an agent that makes a failing test pass by loosening the assertion, or a lint error disappear by disabling the rule, has produced slop that looks like a fix.
@@ -636,6 +639,7 @@ Redis builds with a single `make` invocation and has historically kept its runti
 - Simon Willison's writing on agentic coding and "vibe coding" boundaries (simonwillison.net)
 - Salvatore Sanfilippo (antirez) — blog posts on code comments and system-programming practice (antirez.com/news), and the Redis source itself (github.com/redis/redis) as a primary reading text, not just a dependency
 - The Redis `MANIFESTO` file in the repository itself (github.com/redis/redis/blob/unstable/MANIFESTO) — a rare case of a widely used piece of infrastructure stating its design values in writing
+- Baltes, Cheong & Treude (2026) — a systematic study of over a thousand developer discussions of AI-generated code, framing the reviewer burden as a tragedy of the commons ("AI Slop and the Software Commons," arXiv)
 - "Build Your Own Redis" style projects (codecrafters.io, build-your-own.org) — reimplementing the RESP protocol and a minimal event loop is one of the fastest ways to understand why the real thing is designed the way it is
 
 ---

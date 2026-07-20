@@ -131,6 +131,28 @@ By 2026, "AI slop" has a specific, widely recognized visual signature — design
 
 The stakes are not just aesthetic. Sites that read as generic, templated AI output have been observed converting dramatically worse than differentiated ones — genericness is a business cost, not just a taste problem.
 
+### 2.2 What the data actually says the strongest tells are
+
+A large-scale 2026 study mined millions of Reddit posts specifically to rank which visual features people actually name when they call a site "AI slop," rather than relying on anecdote. The finding is worth internalizing because it corrects a common assumption: **the plain purple-to-blue gradient and unmodified framework defaults (shadcn/Tailwind's out-of-the-box look) rank as the single strongest, most-cited tell — ahead of the more meme-able patterns** like bento grids and glassmorphism, which people reference less often than the discourse around them would suggest. If you only have the budget to fix one thing, fixing the default palette and component styling beats chasing every trend on a list.
+
+That default has a specific, documented origin: Tailwind's own creator has publicly acknowledged setting `indigo-500` as a demo default years ago — a small decision that, propagated through millions of tutorials and starter templates, became training data, which is why models now reach for it as *the* default rather than *a* default.
+
+**The mechanism is self-reinforcing, not static.** A striking site using the trend gets attention and links; that attention gets it scraped into the next round of training data; the next generation of models learns the pattern as even more "normal" than before. This means the definition of slop keeps moving, not settling: a gradient hero alone was the tell in 2024; by 2026 the same gradient plus three Lucide icons plus generic microcopy is the tell, because the floor of "what a model produces by default" keeps rising to match what got flagged last cycle. Treat this list as a snapshot, not a fixed target — the specific defaults will keep shifting; the underlying principle (an unexamined default is not a decision) will not.
+
+**Further concrete tells worth naming, beyond §2.1's list:**
+27. **A thick colored border on one edge of an otherwise plain rounded card.** Cited as one of the single most recognizable tells of generated UI — a decorative accent with no functional meaning, applied because it "looks designed" without being one.
+28. **Cards nested inside cards, each with its own padding and shadow.** Four or five levels deep is common in generated dashboards; it's ceremony, not hierarchy — compare to §2's abstraction-layer tell for code.
+29. **Gradient text on headings and metrics.** Decorative rather than meaningful, and it actively hurts scannability — a solid color reads faster every time.
+30. **"Make it pop" as a default, not a decision.** Glassmorphism, neon glows, blurred background orbs, and monospace-everything stacked together read as a hackathon demo, not a shipped product, precisely because none of them individually justifies itself.
+31. **Animation applied to prove effort, not to carry meaning.** Bouncing buttons, wiggling icons, floating badges — motion with no relationship to state or hierarchy is noise, not polish (§9 already covers this for meaningful motion; this is its absence).
+32. **A repeated hero → metric-strip → three-feature-cards template across otherwise unrelated pages.** The tell isn't any one section — it's that every page uses the identical shape regardless of what that page is actually for.
+
+One clarifying nuance worth stating explicitly: **a component library's defaults are not themselves slop.** shadcn/ui, for instance, is a curated set of well-built, accessible components — the slop is specifically in leaving its radius, color tokens, typography, and spacing at the out-of-the-box values instead of making them your own. The tool isn't the tell; the absence of a decision on top of it is.
+
+### 2.3 A caution: this checklist is diagnostic evidence, not ammunition
+
+"AI slop" has also become, in some communities, a reflexive insult thrown at creative work with no actual evidence behind it — independent game and app developers have reported being accused of using generative AI they never touched, based purely on a work having a plain or unremarkable style. That's the checklist in this guide used backwards. The tells in §2 and §2.2 are meant to help *you* audit and improve your own work, or to explain, with specifics, why a piece of work reads as generic — "the palette is an unmodified framework default and the layout matches three other sites this week" is a claim you can check. "This looks AI" without naming which tell is present is not. If you use this guide to evaluate someone else's work, cite the specific pattern, the same way the guide itself always does.
+
 ---
 
 ## 3. First Principles
@@ -211,7 +233,7 @@ Left-align body (in LTR). Reserve centering for **short** items (a hero headline
 ### 5.1 Structure the palette
 - **1 dominant** brand/base hue.
 - **A neutral ramp** (9–12 steps) — this is where 80% of the UI lives.
-- **1 accent** reserved almost exclusively for primary action.
+- **1 accent** reserved almost exclusively for primary action. A useful rule of thumb from production anti-slop tooling: cap accent saturation under ~80% — a fully saturated accent used everywhere is what makes a generated palette look loud rather than considered; a dominant color with a genuinely sharp, restrained accent reads as more intentional than several evenly-saturated colors competing for attention.
 - **Semantic** colors: success / warning / danger / info — each with a full ramp, not one value.
 
 ### 5.2 Off-neutrals read as intentional
@@ -444,6 +466,8 @@ This is the same imperative-mood, why-not-what structure covered for code in [§
 - [ ] Palette is *reasoned* (dominant + neutrals + one accent + semantics).
 - [ ] Off-neutrals, tinted/layered shadows.
 - [ ] Contrast meets AA (text 4.5:1, UI 3:1); meaning isn't hue-only.
+- [ ] No default framework gradient (Tailwind indigo-to-purple or equivalent) left unexamined; no gradient text on headings/metrics.
+- [ ] No decorative thick single-side border, no cards nested more than one level deep for hierarchy that doesn't need it.
 
 **Layout**
 - [ ] Consistent spacing scale; intentional rhythm (dense + open).
@@ -486,6 +510,7 @@ This is the same imperative-mood, why-not-what structure covered for code in [§
 - Material Design & Apple Human Interface Guidelines — as references to understand, not to copy
 - Creative Boom and similar design-press coverage of the 2025–2026 "AI slop" backlash (gradients, glassmorphism, bento grids, caricature illustration)
 - eMarketer's forecasts on AI-generated web content share — context for why distinctiveness is becoming a competitive requirement, not a nicety
+- Large-scale Reddit-mined studies ranking the specific visual "tells" people actually cite when calling a site AI-generated — useful for checking this guide's diagnostic list against real, current data rather than anecdote
 
 ---
 
