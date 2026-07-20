@@ -80,6 +80,8 @@ If you can't answer all three without hedging, you have not finished the task �
 
 This is a self-check, not decoration: run it every time, even when the task feels routine, even late in a long session when earlier context has scrolled out of view. Skipping it is the single most common way these instructions get ignored in practice.
 
+**Prose can't force compliance — CI can.** This repo ships a mechanical backstop for rules 1 and 2 above: `enforcement/check-architecture.sh` fails a build if a new top-level directory ships without an architecture-doc update, and `enforcement/check-integration-tests.sh` fails a build if a boundary-crossing change ships without an integration test. See `enforcement/README.md` for how to copy both into your own project's CI. If you're an agent working in a repo that already has these gates wired up, run them yourself before reporting a task done — `enforcement/check-architecture.sh <base> <head>` and `enforcement/check-integration-tests.sh <base> <head>` — instead of waiting for CI to catch it.
+
 ---
 
 ## Table of Contents
