@@ -20,6 +20,8 @@ Before you write or generate a single line for a task, do this, in order:
 4. **Treat an architectural change as categorically different from a feature change**, even when the diff size looks similar. A 40-line change that moves where things live has a different blast radius than a 40-line change that adds a function, because everything downstream now has to agree on the new shape. Flag it as such; don't bundle it into an unrelated PR.
 5. **When genuinely uncertain, ask rather than guess.** Guessing an architectural pattern and being wrong is not a neutral action you can quietly correct later — by the time it's discovered, other code has already been built on top of the guess. This is the one category of decision in this entire guide where asking a clarifying question is cheaper than proceeding with your best assumption.
 
+**A second rule with the same priority as architecture: never call a task finished on unit tests alone.** If the change touches more than one component — a network call, a database write, a queue, another module — write an integration test that exercises the real boundary, not just unit tests against a mocked version of it. See §14.1. This is the other place agents most reliably produce work that looks complete and isn't: every unit test green, and the actual seam between two pieces never once verified to work.
+
 ### On a brand-new project: write the architecture down before you write any code
 
 Everything above assumes an existing convention to find or a precedent to match. A brand-new project has neither — which is exactly when architecture gets skipped, because there's no code yet to organize and the pressure is to start producing something visible. This is backwards. **A new project is the single cheapest moment to decide architecture, because it's the only moment nothing has been built on top of the decision yet.**
@@ -351,6 +353,16 @@ Treat every AI-suggested package the same way you'd treat a link from a stranger
 - **Deterministic tests.** No real network, no `sleep`-based timing, no reliance on wall-clock/timezone/order. Inject the clock and randomness.
 - Coverage is a **floor, not a goal** — 100% coverage of assertions-that-never-fail is theater. Aim for meaningful coverage of behavior and risk.
 
+### 14.1 Unit tests are not a substitute for integration tests — write both, always
+
+This is one of the most common places AI-assisted code quietly fails, because it's easy to generate a pile of green unit tests that individually look thorough while the actual seams between components were never exercised at all. **A task is not done when the unit tests pass. It's done when the pieces have been proven to work together.**
+
+- **Unit tests prove a function is correct in isolation. Integration tests prove your assumption about how it's wired to everything else is correct too** — and the second kind is the one that catches the bugs that actually reach production: a mismatched API contract between two services, a real SQL query that doesn't match the ORM model, an auth middleware that doesn't actually run in the real request pipeline, a message format one side serializes and the other can't deserialize.
+- **Heavy mocking is exactly how unit tests hide this gap.** §14's mocking guidance already warns against mocking everything — this is why it matters at the system level, not just the unit level: a suite of unit tests that mocks the database, the queue, and every downstream service can be 100% green while the real database call, the real queue message, or the real HTTP call between two of your own services has never once actually run.
+- **Write integration tests that exercise the real boundary**, not a mocked stand-in for it: a real (test) database via a throwaway schema or a containerized instance, the real HTTP client against a real running instance of the service you depend on (or a contract-tested fake that's verified to match), the actual serialization format on the wire — not an in-memory object that skipped serialization entirely.
+- **Every feature that crosses a boundary — a network call, a database write, a queue publish, a call into another module you don't own — needs at least one integration test covering its main path**, in addition to whatever unit tests cover its internal logic. If a PR adds a new API endpoint and only has unit tests for the handler function with the database mocked out, the endpoint has not actually been proven to work.
+- **This is non-negotiable for AI-agent-generated code specifically.** An agent working function-by-function inside its own context window has every incentive to prove each piece works in isolation and no natural mechanism to notice that two pieces it generated in different turns don't actually fit together at the seam — that only shows up when something exercises the real connection between them. Never let "the unit tests pass" be the signal that a change involving more than one component is finished.
+
 ---
 
 ## 15. Git, Reviews & Collaboration
@@ -521,6 +533,7 @@ An agent without an explicit map of your structure will pattern-match against th
 
 **Tests & docs**
 - [ ] Tests exist and could genuinely fail; edges + a regression test for fixed bugs.
+- [ ] Every network call, DB write, queue publish, or cross-module boundary this change touches has an integration test on its main path — not just mocked unit tests.
 - [ ] Comments explain *why* and are true; public APIs documented (with units).
 - [ ] I can explain every line of this PR without re-reading it for the first time in review.
 - [ ] Commit messages are imperative, explain *why*, and would make sense to someone bisecting this in a year.
