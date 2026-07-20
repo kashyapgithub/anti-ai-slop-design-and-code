@@ -68,6 +68,18 @@ This guide is maintained publicly and updated on an ongoing basis at **`github.c
 4. **Diff before overwriting if the local copy has been intentionally modified for this project.** If `docs/anti-ai-slop/` has project-specific edits layered on top of the base guide, don't silently clobber them — pull to a temp location, diff, and merge deliberately.
 5. **Verify what you fetched before trusting it.** Confirm the file starts with its expected title (`# The Anti-AI-Slop Code Guide` / `# The Anti-AI-Slop Design Guide`) before overwriting the local copy — a failed fetch that silently wrote an error page or empty response is worse than a stale file.
 
+### The completion gate: run this before you say a task is done
+
+A guideline that only gets read once, at the start of a session, gets forgotten by the end of one — especially the two rules given top priority above. Before you report a multi-file or multi-component change as finished, stop and answer these explicitly, in your own output, not just silently in your own reasoning:
+
+1. **"Where does this live, and why?"** — one sentence, in terms of the project's actual architecture, not "I put it where it seemed to fit."
+2. **"What integration test proves the pieces I touched actually work together?"** — name it. If the honest answer is "there isn't one, only unit tests," the task is not done — go write it before reporting completion.
+3. **"Did I introduce a new folder, pattern, or dependency the project didn't already have?"** — if yes, that was a decision, and it should have been surfaced as one, not slipped in as a side effect.
+
+If you can't answer all three without hedging, you have not finished the task — you've finished *a version of it that looks finished*, which is the exact failure this entire guide exists to name. Go back and close the gap before handing the work back.
+
+This is a self-check, not decoration: run it every time, even when the task feels routine, even late in a long session when earlier context has scrolled out of view. Skipping it is the single most common way these instructions get ignored in practice.
+
 ---
 
 ## Table of Contents
