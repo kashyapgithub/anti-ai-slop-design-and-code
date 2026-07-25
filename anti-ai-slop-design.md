@@ -343,6 +343,16 @@ Design is 90% words. Slop copy is the loudest tell.
 - **Error messages are UX.** Human, blameless, actionable.
 - Use **real or realistic content** while designing. Lorem ipsum hides layout failures that real strings expose (long names, empty fields, huge numbers, RTL).
 
+### 8.1 Design for translation, not just the language you're designing in
+
+A layout that only ever gets tested against English source copy is a layout that hasn't actually been tested for content — English is one of the more compact languages UI text gets written in, so a design that fits it exactly is a design with zero margin for anything else.
+
+- **Leave room for text expansion.** German, Finnish, and Russian commonly run 30–35% longer than the equivalent English string; some UI labels in other languages run longer still. A button or nav label sized to fit its English text exactly will truncate or wrap the moment it's translated — size containers to the content's role, not to one language's character count.
+- **Never bake text into an image.** A label rendered into a PNG (a hero graphic, an icon with a caption drawn on) can't be translated without regenerating the asset — keep text as text, layered over graphics, every time.
+- **Plan the mirror, even if you don't ship it yet.** RTL languages (Arabic, Hebrew) don't just reverse text — the whole layout mirrors: navigation, icons with directional meaning (back/forward arrows, progress indicators), and the reading order of a multi-column layout. Using logical CSS properties (`margin-inline-start` instead of `margin-left`) costs nothing today and removes an entire rewrite later.
+- **Don't localize dates, numbers, or currency by hand-formatting a string.** `12/03/2026` is unambiguous to nobody outside the country that wrote it — use the platform's locale-aware formatting (`Intl.DateTimeFormat`, `Intl.NumberFormat`) rather than a hardcoded format string, even if you only ship one locale today.
+- **Idioms and wordplay in microcopy don't survive translation.** "Ship on Fridays without fear" is a specific, working example of §8's "outcomes over features" — but it's also an idiom that a literal translation will render as nonsense. If a product genuinely needs to localize, flag copy that depends on wordplay so it gets a real transcreation pass, not a mechanical translation.
+
 ---
 
 ## 9. Motion
@@ -479,6 +489,7 @@ This is the same imperative-mood, why-not-what structure covered for code in [§
 - [ ] Empty, loading, and error states are designed.
 - [ ] Copy is specific and outcome-oriented; CTAs are contextual.
 - [ ] Real content stress-tested (long/empty/huge/RTL).
+- [ ] Text containers allow for expansion; no text baked into images; dates/numbers use locale-aware formatting.
 
 **Motion & a11y**
 - [ ] Motion carries meaning; timing eased 150–300ms; reduced-motion honored.

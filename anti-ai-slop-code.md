@@ -275,6 +275,16 @@ This hides failures, corrupts state, and makes incidents undebuggable.
 
 Error **messages** are for the human who will read them at 3 a.m.: state the operation, the relevant input, and the likely fix.
 
+### 7.1 A caught error that vanishes is worse than an uncaught one
+
+An uncaught error at least leaves a stack trace and crashes loudly enough to get noticed. A `catch` block that logs nothing, or logs to a place nobody watches, converts a visible failure into an invisible one — and invisible failures are the ones that run in production for weeks before anyone notices the numbers are wrong. This is a distinct failure from the swallowing tell above: the error was technically *handled*, but handling it didn't make it observable.
+
+- **Every caught error gets logged with enough context to act on it**, not just its message: what operation was in flight, the relevant IDs (order, user, request), and the original error's stack or cause — not `console.log(e)`, which discards the stack in most runtimes and disappears the moment the process restarts.
+- **Structured logs, not string concatenation.** `log.error("payment failed", { orderId, userId, err })` is greppable and alertable; `console.log("payment failed for " + orderId)` is not — an on-call engineer at 3 a.m. is searching a log aggregator by field, not reading prose.
+- **Logs and metrics answer different questions — use both, not one instead of the other.** A log tells you what happened to *this one* request. A metric (a counter, a latency histogram) tells you whether it's happening *systemically* — a spike in error rate is what actually pages someone; nobody watches a log stream waiting for a pattern to emerge.
+- **Don't log secrets, tokens, or full request bodies by default** — this is the same boundary as §11's rule against leaking internals in error messages, applied to logs instead of responses.
+- **If it's worth a `try`/`catch`, it's worth deciding *now* what "someone should know about this" means** — an alert, a metric increment, a log line at the right severity — not a decision left for whoever debugs the incident this causes later.
+
 ---
 
 ## 8. Types & Contracts
@@ -333,6 +343,16 @@ Treat every AI-suggested package the same way you'd treat a link from a stranger
 - **Pin dependencies and diff lockfile changes in review** — a new, unexpected entry in `package-lock.json` or `requirements.txt` is exactly the signal this attack is designed to slip past.
 - **Prefer tools with real-time registry validation** (MCP-backed package lookups, IDE plugins that check names against the registry) over raw model output for install commands.
 - This is a supply-chain risk category distinct from typosquatting: the attacker isn't betting on your typo, they're betting on the model's confident wrongness.
+
+### 11.2 A database migration is a production change, not a code change
+
+Every rule above treats security as protecting a system that's already running. A migration is where code changes and production data meet directly, with no request/response cycle to contain the blast radius if it's wrong — which makes it one of the few places a single generated file can cause damage that a revert doesn't fix.
+
+- **Never generate a migration that drops a column, drops a table, or renames a column in one step, in one deploy.** Data in a dropped column is usually gone even if the code revert is instant. The safe sequence is expand → migrate → contract across separate deploys: add the new column/table alongside the old one, backfill and dual-write, switch reads over, confirm, *then* remove the old one in a later, separate change — never collapse this into one migration because it's fewer files.
+- **Every migration needs a tested rollback**, not just a forward path. If the migration tool doesn't generate one automatically, write it by hand and actually run it against a copy of real (or realistic) data before trusting it — a rollback that's never been executed is a guess, not a safety net.
+- **Never trust an agent's assumption about existing data shape.** A generated migration that assumes a column is never null, or that an enum has no legacy values, is a hallucinated dependency (§11.1) at the schema level — it's plausible-looking SQL, not a verified fact about your actual production table. Check the real data before writing a constraint that assumes it.
+- **Long-running migrations need to not lock the table underneath live traffic.** A generated `ALTER TABLE` that looks correct in a test database with a thousand rows can take a table-locking outage in production with a hundred million; know your database engine's actual locking behavior for the operation you're generating, not just its syntax.
+- **Backfills are production load, not a script you fire and forget.** Batch them, rate-limit them, and make them resumable — a backfill that dies at 60% with no checkpoint is a new incident, not a completed task.
 
 ---
 
@@ -547,6 +567,11 @@ An agent without an explicit map of your structure will pattern-match against th
 - [ ] No hardcoded secrets; injection surfaces parameterized/escaped.
 - [ ] No home-grown crypto/auth; least privilege; internals not leaked in errors.
 - [ ] AI-suggested dependencies verified against the real registry before install; lockfile diff reviewed.
+- [ ] Any migration in this change has a tested rollback and doesn't drop/rename data in the same step it's introduced.
+
+**Observability**
+- [ ] Every caught error is logged with real context (IDs, operation, cause) — not `console.log(e)` or silence.
+- [ ] A failure a human would want to be paged for actually increments a metric or fires an alert, not just a log line nobody watches.
 
 **Tests & docs**
 - [ ] Tests exist and could genuinely fail; edges + a regression test for fixed bugs.
