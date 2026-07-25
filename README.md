@@ -22,6 +22,10 @@ Both files contain a "Keep your local copy synced with the source repo" section 
 
 Two scripts that back a couple of the guide's rules with an actual CI gate instead of just prose: `check-architecture.sh` fails a build that adds a new top-level directory without an architecture-doc update; `check-integration-tests.sh` fails a build that touches a network/DB/queue boundary without a matching integration test. See [`enforcement/README.md`](./enforcement/README.md) for how to adopt them in your own project.
 
+## `templates/`
+
+Drop-in `AGENTS.md` / `CLAUDE.md` files that make an agent load the guide's non-negotiable rules automatically at session start, instead of relying on someone pasting them into chat. See [`templates/README.md`](./templates/README.md).
+
 ## Status
 
 Actively maintained and expanded — not a finished, static reference.
