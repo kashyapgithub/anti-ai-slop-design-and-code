@@ -25,3 +25,7 @@ Two scripts that back a couple of the guide's rules with an actual CI gate inste
 ## Status
 
 Actively maintained and expanded — not a finished, static reference.
+
+## License
+
+MIT — see [`LICENSE`](./LICENSE). Copy, fork, and adapt freely, including into your own project's `docs/` or `enforcement/`.
