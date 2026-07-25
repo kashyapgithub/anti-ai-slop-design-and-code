@@ -5,14 +5,21 @@ This First" sections only works if an agent actually reads it — and no
 markdown file can force that. What *can* be forced, mechanically, is
 whether the agent sees it automatically, every session, without anyone
 pasting it into chat: every major coding agent now auto-loads a specific
-file from the repo root at startup.
+file (or set of files) from the repo root at startup.
 
-| Tool | Auto-loaded file |
-|---|---|
-| Claude Code | `CLAUDE.md` |
-| Cursor, Codex CLI, Copilot, Windsurf, Amp, Devin, Aider, Zed, JetBrains Junie | `AGENTS.md` (converging cross-tool standard) |
-| GitHub Copilot (also) | `.github/copilot-instructions.md` |
-| Gemini CLI | `GEMINI.md` |
+## Coverage
+
+| Tool | What it auto-loads | Notes |
+|---|---|---|
+| **Claude Code** | `CLAUDE.md` | Native, auto-loaded; supports `@path` imports |
+| **opencode** | `AGENTS.md` (falls back to `CLAUDE.md` if no `AGENTS.md`) | Also honors an `instructions` array in `opencode.json`, including **remote URLs** |
+| **Kilo Code** | `AGENTS.md` (on by default) | Also honors an `instructions` array in `kilo.jsonc`, including **remote URLs**; per-directory `AGENTS.md` files load dynamically as the agent reads that subtree |
+| **Google Antigravity IDE** | `AGENTS.md` as the cross-tool foundation, plus `~/.gemini/GEMINI.md` for Antigravity-only overrides and `.agents/rules/` for workspace supplements | Rule files are capped at 12,000 characters each — this repo's condensed `AGENTS.md` is well under that |
+| **Cursor, Codex CLI, Copilot, Windsurf, Amp, Devin, Aider, Zed, JetBrains Junie** | `AGENTS.md` | Converging cross-tool standard — 28+ tools, 60,000+ repos as of mid-2026 |
+| **GitHub Copilot** (additionally) | `.github/copilot-instructions.md` | |
+| **Gemini CLI** | `GEMINI.md` | Separate from Antigravity's `GEMINI.md` path — see the note below if you run both on one machine |
+
+In short: **`AGENTS.md` alone now covers the large majority of tools.** Claude Code is the one significant tool that needs a nudge (the `@AGENTS.md` import in `CLAUDE.md` below) to read the same file instead of expecting its own.
 
 ## Adopting this in your own project
 
@@ -23,10 +30,24 @@ file from the repo root at startup.
 2. Copy `CLAUDE.md` into your project's root too (or symlink it —
    `ln -s AGENTS.md CLAUDE.md` — so the two files can't drift apart).
    Claude Code will load it and follow the `@AGENTS.md` import.
-3. Pull the full guides into `docs/anti-ai-slop/` per the sync
-   instructions inside each guide, so an agent that does fetch further
-   context finds the full reasoning, not just the condensed rules.
-4. If you're on Cursor specifically, you can additionally set the
+3. **If you use opencode or Kilo Code**, copy `opencode.json` and/or
+   `kilo.jsonc` into your project root (merge the `instructions` array
+   into an existing config if you already have one). Both files point
+   directly at this repo's raw GitHub URLs, so those two tools pull the
+   full, current guides at the start of every session automatically —
+   no manual sync step needed for them specifically.
+4. For everything else (Antigravity, Cursor, Copilot, Windsurf, Claude
+   Code, and any tool without remote-URL support), pull the full guides
+   into `docs/anti-ai-slop/` per the sync instructions inside each guide,
+   so an agent that does read further finds the full reasoning, not just
+   the condensed rules in `AGENTS.md`.
+5. **If you run both Antigravity IDE and Gemini CLI on the same machine**,
+   note they currently share the same global config path
+   (`~/.gemini/GEMINI.md`), which can leak rules between the two tools.
+   Put shared rules in `~/.gemini/AGENTS.md` instead (Gemini CLI ignores
+   it, Antigravity reads it) and keep `GEMINI.md` for Antigravity-only
+   overrides.
+6. If you're on Cursor specifically, you can additionally set the
    equivalent rule file to "always apply" (rather than glob- or
    agent-requested-scoped) so it's injected on every single turn, not
    just read once at session start — stronger than a file the agent
