@@ -22,6 +22,10 @@ Before you write or generate a single line for a task, do this, in order:
 
 **A second rule with the same priority as architecture: never call a task finished on unit tests alone.** If the change touches more than one component — a network call, a database write, a queue, another module — write an integration test that exercises the real boundary, not just unit tests against a mocked version of it. See §14.1. This is the other place agents most reliably produce work that looks complete and isn't: every unit test green, and the actual seam between two pieces never once verified to work.
 
+**Two more standing rules, every commit, no exceptions:**
+- **Never commit with a message that doesn't explain *why*.** "fix stuff," "update files," or an unexplained restatement of the diff are not acceptable commit messages from an agent — see §15.1 for the full structure. If you generated the diff, you're the one person guaranteed to know why it was needed right now; write that down before it's lost.
+- **Never write a comment you haven't checked against the code it sits next to.** A comment that's wrong is worse than no comment, because the next reader — human or agent — trusts it by default. See §9.1 for what makes a comment clarify instead of confuse.
+
 ### On a brand-new project: write the architecture down before you write any code
 
 Everything above assumes an existing convention to find or a precedent to match. A brand-new project has neither — which is exactly when architecture gets skipped, because there's no code yet to organize and the pressure is to start producing something visible. This is backwards. **A new project is the single cheapest moment to decide architecture, because it's the only moment nothing has been built on top of the decision yet.**
@@ -310,6 +314,35 @@ An uncaught error at least leaves a stack trace and crashes loudly enough to get
 - Prefer **self-documenting code** (good names, small functions) so comments are reserved for the genuinely non-obvious.
 - **TODO/FIXME** must be actionable and, ideally, ticketed — not a shrug left in `main`.
 
+### 9.1 Write comments that can't be misread — clarity is the whole job
+
+A comment's only purpose is to leave the next reader more certain than the code alone would, not less. A comment that's technically about the right topic but ambiguous, detached, or wrong actively costs the reader more time than no comment at all, because they trust it by default and have to fight that trust once they discover it's misleading them. This is the practical version of the Redis case study's function-comment contract (§19.2): a good comment lets the reader *stop* reading and move on with confidence; a bad one makes them keep reading anyway, now suspicious of everything else you wrote.
+
+- **Say what "it" refers to when more than one thing could be "it."** If the sentence before mentions two objects, `// retry it after a delay` doesn't tell the reader which one. Name the thing.
+  ```js
+  // confusing: // cache it for later
+  // clear:     // cache the parsed response, not the raw fetch — parsing is the expensive part
+  ```
+- **Don't require the reader to already know the punchline.** A comment that only makes sense once you've read three functions ahead is written for the author's own mental state while writing, not for a reader arriving cold.
+  ```python
+  # confusing: # handle the edge case
+  # clear:     # skip rows where user_id is null — these are guest checkouts,
+  #            # which don't have an account yet (see ORD-88)
+  ```
+- **Put the comment where the reader's eyes already are.** A comment three lines above the line it actually explains reads as if it's about the line directly below it — if it isn't, the reader will misapply it. Move it adjacent to what it describes, every time.
+- **Don't let a comment quietly contradict the code next to it.** This is the single most damaging comment failure, because it's invisible until someone acts on the wrong information:
+  ```js
+  // confusing (comment is stale — the timeout was changed to 5000 and the comment wasn't):
+  // Timeout after 3 seconds
+  setTimeout(cb, 5000);
+  // clear: either fix the comment in the same change that changed the number,
+  // or delete the comment and let the constant name carry the meaning:
+  const TIMEOUT_MS = 5000;
+  setTimeout(cb, TIMEOUT_MS);
+  ```
+- **Spell out an abbreviation, an acronym, or a domain term the first time it appears in a file**, even if it's obvious to you — "obvious to the author" and "obvious to the next reader, possibly in a different team six months from now" are different bars.
+- **Prefer a comment that states a fact the reader can verify over one that states an opinion they have to trust.** "This is faster" (unverifiable, may already be false by the time it's read) is weaker than "benchmarked at 3x faster than the naive version for inputs over 10k rows, see `bench/parse.js`" (checkable, and self-invalidating if it stops being true).
+
 ---
 
 ## 10. Dependencies & Reuse
@@ -577,6 +610,7 @@ An agent without an explicit map of your structure will pattern-match against th
 - [ ] Tests exist and could genuinely fail; edges + a regression test for fixed bugs.
 - [ ] Every network call, DB write, queue publish, or cross-module boundary this change touches has an integration test on its main path — not just mocked unit tests.
 - [ ] Comments explain *why* and are true; public APIs documented (with units).
+- [ ] No comment is stale, ambiguous about what "it" refers to, or detached from the line it describes.
 - [ ] I can explain every line of this PR without re-reading it for the first time in review.
 - [ ] Commit messages are imperative, explain *why*, and would make sense to someone bisecting this in a year.
 
