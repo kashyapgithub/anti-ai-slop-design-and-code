@@ -662,6 +662,8 @@ If the log line or metric you expected doesn't show up here, §7.1 was violated 
 
 **Add a layer 11 when the change warrants it** — this list is a floor, not a ceiling. A change to a hot path might need a load/benchmark layer (`hyperfine`, `wrk`, a profiler); a change to public API surface might need a contract-diff layer (`openapi-diff`, a snapshot of the generated client). The discipline that matters is the *shape* — cheap and mechanical first, expensive and human last — not the exact count.
 
+**None of this is automatic just because it's written down here.** Reading this section is not the same as running it — an agent under time pressure will drift toward skipping the expensive layers first. `enforcement/run-audit.sh` chains layers 1, 2, 3, 6, and 7 into one script, and `templates/claude-code-settings.json` wires it into a Claude Code `Stop` hook that forces another turn if it fails — a mechanism that runs regardless of what the agent itself decided, not one it can quietly skip. See `enforcement/README.md`.
+
 ---
 
 ## 19. The Anti-Slop Review Checklist

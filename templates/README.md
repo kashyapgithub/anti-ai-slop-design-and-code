@@ -21,6 +21,15 @@ file (or set of files) from the repo root at startup.
 
 In short: **`AGENTS.md` alone now covers the large majority of tools.** Claude Code is the one significant tool that needs a nudge (the `@AGENTS.md` import in `CLAUDE.md` below) to read the same file instead of expecting its own.
 
+## Making the audit actually run, not just get read
+
+`AGENTS.md` and `CLAUDE.md` are read at session start — an agent can still choose not to act on them. `claude-code-settings.json` in this folder is a different kind of mechanism: it wires `../enforcement/run-audit.sh` into a Claude Code `Stop` hook, which runs deterministically every time Claude finishes responding and can force another turn (exit code 2) if the audit fails — this doesn't depend on the model choosing to comply. Copy it to `.claude/settings.json` in your project.
+
+Other tools' equivalents, as of mid-2026 — check before assuming, this moves fast:
+- **opencode** has a plugin system with blocking `tool.before.*` hooks (not a first-party settings file like Claude Code's, but real and scriptable — see the `opencode-hooks` community plugin).
+- **Kilo Code** does not yet have first-class session lifecycle hooks; it's an open feature request. Until it ships, `AGENTS.md`'s prose plus an external git pre-commit/pre-push hook running `run-audit.sh` is the closest deterministic equivalent for Kilo.
+- For any tool without native hooks, a plain **git hook** (`.git/hooks/pre-commit` calling `run-audit.sh`) works regardless of which agent is driving, since it gates at the commit boundary instead of inside the agent.
+
 ## Adopting this in your own project
 
 1. Copy `AGENTS.md` from this folder into your project's root. Fill in
@@ -52,6 +61,10 @@ In short: **`AGENTS.md` alone now covers the large majority of tools.** Claude C
    agent-requested-scoped) so it's injected on every single turn, not
    just read once at session start — stronger than a file the agent
    merely *can* read.
+7. For a tool-agnostic fallback that works no matter which agent (or
+   human) is committing, copy `pre-commit` into `.git/hooks/pre-commit`
+   and `chmod +x` it — git itself will refuse a commit that fails the
+   audit, regardless of what wrote the change.
 
 ## What this does and doesn't do
 

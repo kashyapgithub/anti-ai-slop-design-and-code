@@ -20,7 +20,7 @@ Both files contain a "Keep your local copy synced with the source repo" section 
 
 ## `enforcement/`
 
-Two scripts that back a couple of the guide's rules with an actual CI gate instead of just prose: `check-architecture.sh` fails a build that adds a new top-level directory without an architecture-doc update; `check-integration-tests.sh` fails a build that touches a network/DB/queue boundary without a matching integration test. See [`enforcement/README.md`](./enforcement/README.md) for how to adopt them in your own project.
+Scripts that back the guide's rules with an actual gate instead of just prose: `check-architecture.sh` fails a build that adds a new top-level directory without an architecture-doc update; `check-integration-tests.sh` fails a build that touches a network/DB/queue boundary without a matching integration test; `run-audit.sh` chains the mechanical layers of the guide's 10-layer audit (format, type-check, lint, unit + integration tests) into one script, configurable via `config.env`. See [`enforcement/README.md`](./enforcement/README.md) for how to adopt them, including wiring `run-audit.sh` into a Claude Code `Stop` hook or a plain git `pre-commit` hook so it runs whether or not an agent chooses to run it itself.
 
 ## `templates/`
 

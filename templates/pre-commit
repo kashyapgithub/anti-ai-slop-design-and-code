@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# pre-commit
+#
+# Universal fallback for tools without native agent hooks: runs the same
+# audit as Claude Code's Stop hook, but at the git commit boundary instead
+# of inside the agent. Works no matter which tool (or human) is driving,
+# since it can't be skipped by an agent choosing not to comply — git
+# itself refuses the commit if this script exits non-zero.
+#
+# Install:
+#   cp templates/pre-commit .git/hooks/pre-commit
+#   chmod +x .git/hooks/pre-commit
+#
+# Bypass (use deliberately, not as a habit):
+#   git commit --no-verify
+
+set -euo pipefail
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+cd "$REPO_ROOT"
+
+if [[ ! -x "enforcement/run-audit.sh" ]]; then
+  echo "enforcement/run-audit.sh not found or not executable — skipping audit." >&2
+  exit 0
+fi
+
+enforcement/run-audit.sh

@@ -18,6 +18,31 @@ that section calls top priority:
 Unlike the prose in the guide, these can't be quietly skipped: they run in
 CI and fail the build.
 
+## `run-audit.sh` — the same idea, but forced mid-session instead of at PR time
+
+CI catches a bad change eventually, after it's pushed. `run-audit.sh`
+chains the mechanical layers of the guide's §18 10-layer audit (format,
+type-check, lint, unit tests, integration tests) into one script that
+stops at the first failure — and it's meant to be wired into an agent's
+own hook system, not just run by hand, so the check happens automatically
+mid-session, before the agent even reports the task done.
+
+For Claude Code specifically, `templates/claude-code-settings.json` wires
+this in for real: a `Stop` hook runs `run-audit.sh` every time Claude
+finishes responding, and if it fails, exits with code 2 — which per
+Claude Code's hook system forces Claude to keep working instead of
+stopping, regardless of what the model itself decided. This is a
+genuinely different guarantee than anything else in this repo: it doesn't
+rely on the agent choosing to comply, because a Stop hook runs
+deterministically outside the model's control. Copy that file to
+`.claude/settings.json` (or merge it into an existing one) to use it. See
+`templates/README.md` for the equivalent for other tools where one exists.
+
+Configure which commands actually run via the `AUDIT_*` variables at the
+bottom of `config.env` — an unset command is skipped with a warning, not
+silently treated as passing, so you always know what was and wasn't
+actually checked.
+
 ## Adopting this in your own project
 
 1. Copy this whole `enforcement/` directory into your repo.
@@ -40,6 +65,9 @@ CI and fail the build.
    confirm they correctly fail on a change that should trip them (add a new
    top-level folder with no doc update; touch a boundary path with no test)
    before relying on them.
+5. Fill in the `AUDIT_*` commands in `config.env` and, if you're on Claude
+   Code, copy `templates/claude-code-settings.json` to `.claude/settings.json`
+   so `run-audit.sh` runs automatically at the end of every turn.
 
 ## Running locally
 
