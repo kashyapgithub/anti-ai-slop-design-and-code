@@ -21,7 +21,7 @@ CI and fail the build.
 ## `run-audit.sh` — the same idea, but forced mid-session instead of at PR time
 
 CI catches a bad change eventually, after it's pushed. `run-audit.sh`
-chains the mechanical layers of the guide's §18 10-layer audit (format,
+chains the mechanical layers of the guide's "10-Layer Audit" section (format,
 type-check, lint, unit tests, integration tests) into one script that
 stops at the first failure — and it's meant to be wired into an agent's
 own hook system, not just run by hand, so the check happens automatically
@@ -35,8 +35,19 @@ stopping, regardless of what the model itself decided. This is a
 genuinely different guarantee than anything else in this repo: it doesn't
 rely on the agent choosing to comply, because a Stop hook runs
 deterministically outside the model's control. Copy that file to
-`.claude/settings.json` (or merge it into an existing one) to use it. See
-`templates/README.md` for the equivalent for other tools where one exists.
+`.claude/settings.json` (or merge it into an existing one) to use it.
+
+Other tools' equivalents, as of mid-2026 — check before assuming, this
+moves fast:
+- **opencode** has a plugin system with blocking `tool.before.*` hooks
+  (not a first-party settings file like Claude Code's, but real and
+  scriptable — see the `opencode-hooks` community plugin).
+- **Kilo Code** does not yet have first-class session lifecycle hooks;
+  it's an open feature request as of early 2026.
+- For any tool without native hooks — including Kilo Code until that
+  ships — `templates/pre-commit` is the tool-agnostic fallback: copy it
+  to `.git/hooks/pre-commit` and git itself will refuse a commit that
+  fails the audit, regardless of which agent (or human) produced it.
 
 Configure which commands actually run via the `AUDIT_*` variables at the
 bottom of `config.env` — an unset command is skipped with a warning, not
@@ -89,6 +100,6 @@ These gates catch structural signals — a new folder, a touched boundary
 path — not judgment. A PR can still add a new folder that's a bad
 architectural decision correctly documented, or add a technically-present
 but useless integration test (an integration test that mocks out the real
-boundary is exactly the failure §14.1 warns about, and no regex can catch
+boundary is exactly the failure the guide's integration-testing section warns about, and no regex can catch
 that). The gates raise the cost of skipping the process; they don't
 replace a human — or a careful agent — actually reading the diff.

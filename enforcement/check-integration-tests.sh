@@ -4,8 +4,9 @@
 # Fails if this diff touches a "boundary" path (API routes, DB/repository
 # code, queues, external service clients — configurable in config.env)
 # without also adding or modifying a file that looks like an integration
-# test. This is the mechanical backstop for anti-ai-slop-code.md §14.1:
-# unit tests are not a substitute for integration tests.
+# test. This is the mechanical backstop for anti-ai-slop-code.md's "Unit
+# tests are not a substitute for integration tests" section (§14.1 as of
+# this writing — search by heading if the number has shifted).
 #
 # Usage:
 #   check-integration-tests.sh <base-ref> <head-ref>
@@ -78,7 +79,8 @@ This PR changes code that crosses a real boundary:
 modified in the same change:
   ${INTEGRATION_TEST_REGEX}
 
-Per anti-ai-slop-code.md §14.1: unit tests that mock the database, the
+Per anti-ai-slop-code.md's "Unit tests are not a substitute for
+integration tests" section: unit tests that mock the database, the
 queue, or the downstream service are not proof that the real connection
 works. Add an integration test that exercises the actual boundary — a
 real (test) database, a real HTTP call, real serialization — or, if this

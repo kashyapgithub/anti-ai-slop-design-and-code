@@ -28,7 +28,7 @@ Drop-in `AGENTS.md` / `CLAUDE.md` (plus `opencode.json` / `kilo.jsonc`) that mak
 
 ## Status
 
-Actively maintained and expanded — not a finished, static reference.
+Actively maintained and expanded — not a finished, static reference. See [`CHANGELOG.md`](./CHANGELOG.md) for what's changed and when; it's much cheaper to check than diffing the full guides on every sync.
 
 ## License
 
