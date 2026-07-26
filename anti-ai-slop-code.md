@@ -22,9 +22,11 @@ Before you write or generate a single line for a task, do this, in order:
 
 **A second rule with the same priority as architecture: never call a task finished on unit tests alone.** If the change touches more than one component — a network call, a database write, a queue, another module — write an integration test that exercises the real boundary, not just unit tests against a mocked version of it. See §14.1. This is the other place agents most reliably produce work that looks complete and isn't: every unit test green, and the actual seam between two pieces never once verified to work.
 
-**Two more standing rules, every commit, no exceptions:**
+**Four more standing rules, no exceptions:**
 - **Never commit with a message that doesn't explain *why*.** "fix stuff," "update files," or an unexplained restatement of the diff are not acceptable commit messages from an agent — see §15.1 for the full structure. If you generated the diff, you're the one person guaranteed to know why it was needed right now; write that down before it's lost.
 - **Never write a comment you haven't checked against the code it sits next to.** A comment that's wrong is worse than no comment, because the next reader — human or agent — trusts it by default. See §9.1 for what makes a comment clarify instead of confuse.
+- **When a user reports "something broke" or "this used to work," check the last 5 commits before doing anything else.** `git log -5 --oneline` and `git diff HEAD~5 HEAD --stat` first — not a broad re-read of the codebase, not five clarifying questions. Recent history is the highest-prior signal for a regression, because "used to work" means a working state existed and something changed since; that change is very likely in the last few commits. See §15.2 for the full triage sequence.
+- **Before every nontrivial change, not just after a complaint, check the last 3 commits for the area you're touching.** `git log -3 --oneline` and `git diff HEAD~3 HEAD --stat` — check for duplication, contradiction, and stale assumptions before you start, and again after you finish. See §15.4.
 
 ### On a brand-new project: write the architecture down before you write any code
 
@@ -294,6 +296,18 @@ An uncaught error at least leaves a stack trace and crashes loudly enough to get
 - **Don't log secrets, tokens, or full request bodies by default** — this is the same boundary as §11's rule against leaking internals in error messages, applied to logs instead of responses.
 - **If it's worth a `try`/`catch`, it's worth deciding *now* what "someone should know about this" means** — an alert, a metric increment, a log line at the right severity — not a decision left for whoever debugs the incident this causes later.
 
+### 7.2 One centralized logging entry point — a "master log" — not scattered calls
+
+§7.1 covers what a *caught error* logs. This is broader: the whole system should be observable, not just its failures, and that only works if logging is one deliberate, consistent piece of infrastructure rather than whatever `console.log`/`print` an agent happened to reach for in each file it touched. A codebase where every module logs differently — different formats, different levels, no way to trace one request through the system — is exactly as hard to debug as one with no logging at all, just with more noise in the way.
+
+- **One logger module, configured once, imported everywhere.** Never `console.log`/`print` scattered through application code — every log call goes through a single configured logger (`pino`, `winston`, `structlog`, `zap`, whatever fits the stack) so format, level, and output destination are controlled in one place, not reconstructed ad hoc per file.
+- **Every log line is structured, not a sentence.** Timestamp, level, a stable event/operation name, and structured context fields (`{ userId, orderId, durationMs }`) — never string-interpolated prose. This is what makes a log aggregator actually queryable instead of just a wall of text to `grep` through by hand.
+- **Generate a correlation ID at the entry point of every request, job, or task, and thread it through every log line and every downstream call for that operation.** This is the single highest-leverage piece of a "master log": without it, one logical operation's logs are scattered and uncorrelated across every service and module it touched, and reconstructing what happened means guessing which lines belong together by timestamp proximity. With it, `grep <correlation-id> logs/*.log` returns the complete story of exactly one request, in order, across every boundary it crossed.
+- **Log at boundaries, not just failures.** Every external call in and out, every queue message published or consumed, every DB write of consequence gets a log line on the way in and the way out — not just when something throws. "Started X" / "finished X" pairs are what let you tell *where* a hung or silently-wrong operation actually stopped, even when nothing technically errored. This is the same boundary concept as §14.1's integration-test rule, applied to observability instead of tests.
+- **Use levels consistently, and mean something different by each one.** `debug` (verbose, off by default in production), `info` (normal operational milestones — a request started, a job completed), `warn` (recovered or degraded, but not broken), `error` (needs a human's attention). Logging everything at `info` makes the signal indistinguishable from noise; logging nothing below `error` means you only find out something happened after it already broke.
+- **A centralized sink, even in local development.** All logs land in one place a human or agent can tail — `tail -f logs/app.log`, not five different terminal windows for five different services with no unified view. This is what layer 10 of §18's audit is actually checking: that the log line you expect to see for the operation you just touched shows up somewhere you're actually looking.
+- **Logging is not exempt from the rest of this guide.** Don't log secrets, tokens, or full request/response bodies by default (§7.1, §11). Don't put a log call inside a hot loop with no rate limiting — a debug line that fires a million times a second is a self-inflicted denial-of-service against your own log aggregator, and it's still slop even though the intent was "more observability."
+
 ---
 
 ## 8. Types & Contracts
@@ -466,7 +480,7 @@ change without re-deriving it>
 - **Types worth using** (Conventional Commits): `feat`, `fix`, `refactor`, `perf`, `test`, `docs`, `chore`, `build`, `ci`. Consistency here makes changelogs and `git log --oneline --grep` genuinely useful, not just decorative.
 - **Reference the issue, don't replace the message with it.** `Closes #482` is a footer, not a substitute for explaining the change — issue trackers get migrated and deleted; the git history is often what survives.
 - **`git bisect` is the real test.** A good commit message (and an atomic commit) means that when `git bisect` lands on it, the message alone tells you whether this is the culprit, without needing to reconstruct context from three other commits.
-- **AI-assisted commits need the same scrutiny as AI-assisted code.** A generated message that summarizes *what* the diff touched (file names, line counts) but not *why* is slop with better formatting — see §15.2. If you didn't understand the change well enough to write the *why* yourself, that's a signal to go re-read the diff, not to ship the auto-generated summary.
+- **AI-assisted commits need the same scrutiny as AI-assisted code.** A generated message that summarizes *what* the diff touched (file names, line counts) but not *why* is slop with better formatting — see §15.3. If you didn't understand the change well enough to write the *why* yourself, that's a signal to go re-read the diff, not to ship the auto-generated summary.
 
 **Slop vs. craft:**
 ```
@@ -487,7 +501,27 @@ signature validity.
 Closes #482"
 ```
 
-### 15.2 The agentic-PR flood is a real cost, not a hypothetical
+### 15.2 Triaging "something broke": check the last 5 commits before anything else
+
+When a user reports a regression — "this broke," "it used to work," "X stopped working" — with no other detail, the highest-signal, lowest-cost first move is always the same, and skipping it in favor of a broad re-read of the codebase or a round of clarifying questions wastes the most valuable context available: **a regression report implies a working state existed, and git history is the literal record of what changed since.**
+
+1. **Look at the shape of recent history first.**
+   ```bash
+   git log -5 --oneline
+   git diff HEAD~5 HEAD --stat
+   ```
+   This costs almost nothing and immediately narrows the search space from "the whole codebase" to "five commits and the files they actually touched."
+2. **Match the symptom against what actually changed, not against what's "interesting."** A broken login flow after five commits where one touched auth middleware is a strong first hypothesis — evaluate that one first, don't treat all five as equally likely just because they're equally recent.
+3. **Read the suspect commit's full diff and message**, not just its stat line.
+   ```bash
+   git show <suspect-sha>
+   ```
+   This is where §15.1's advice pays off in reverse: a commit message that explains *why* a change was made lets you evaluate whether it plausibly explains the symptom without re-deriving the reasoning from scratch. A commit message that's just "fix stuff" gives you nothing to work with here — which is the concrete cost of skipping §15.1, not an abstract one.
+4. **If the culprit isn't in the last 5, widen methodically — don't jump straight to a wide, unfocused search.** Extend to `git log -15`, or run an actual `git bisect` against a known-good tag or commit if one exists. Bisecting a small, well-defined range is still cheaper than reading unrelated code hoping to spot the bug by inspection.
+5. **Only fall back to broader debugging once recent history has been ruled out**: dependency version bumps, infrastructure or config changes outside git, environment differences — these are real causes, but they're the second move, not the first, because they're more expensive to check and less likely than "something in the last few commits."
+6. **State which commit you suspect and why, out loud, before proposing a fix.** This is the same comprehension standard as the rest of this guide (§16, the completion gate) applied to debugging specifically — "I changed something and the symptom went away" without first identifying *why* the original commit caused it is a guess that happened to work, not a diagnosis.
+
+### 15.3 The agentic-PR flood is a real cost, not a hypothetical
 
 By 2026 this stopped being theoretical: maintainers of major projects have described being overwhelmed by low-effort, AI-generated pull requests — verbose diffs with descriptions the submitter can't explain when asked, "fixes" for issues that don't exist, and drive-by contributions optimized to look mergeable rather than to be correct. The Jazzband Python collective shut down citing the unsustainable volume of AI-generated spam; curl's maintainer canceled its bug-bounty program because it had become a magnet for low-effort AI-assisted submissions. This is the same "plausibility over correctness" signature from §1, now arriving as a volume problem for reviewers, not just a quality problem for one codebase.
 
@@ -499,6 +533,18 @@ Practical implications:
 - **Maintainers are within their rights to require a human-legible rationale** and to close low-effort AI-generated contributions without extensive engagement — protecting reviewer time is not gatekeeping.
 - **Don't let commit-message and PR-description generators substitute for understanding.** They're fine for formatting a message you already understand; they're slop generators when used to describe a diff you haven't read.
 - **If you maintain something others contribute to, the mitigations forming across the industry in 2026 are converging on a few concrete moves**: hard PR-size limits, contribution templates that require the submitter to state what they tested and why, and — as a last resort — throttling or auto-closing low-effort external PRs. None of these are anti-AI; they're the same review discipline this guide already argues for, applied at the point where volume alone would otherwise defeat it.
+
+### 15.4 Standing habit: check the last 3 commits before every change, not just after a complaint
+
+§15.2 is reactive — a user reports a regression, you look backward over 5 commits to find the cause. This is the proactive counterpart, run before you start on *every* nontrivial change, not just when something's already reported broken: a quick pass over the last 3 commits to check whether what you're about to do fits with what was just done, or fights it.
+
+- **Before starting**, run `git log -3 --oneline` and `git diff HEAD~3 HEAD --stat` for the area you're touching. Three commits, not five — this check is meant to run constantly, every change, so it has to stay cheap enough to actually happen every time, not just when something feels risky.
+- **Check three things against that recent history:**
+  1. **Duplication** — did one of the last 3 commits already add the utility, endpoint, or fix you're about to add? Building the same thing twice in one week is a coordination failure, not a coincidence, when it's visible in three commits of git log.
+  2. **Contradiction** — does one of those commits represent a deliberate decision (a rename, a deprecation, a structural change, a reverted approach) that your planned change would silently undo or fight? If commit N-2 renamed a function and your change is about to reintroduce the old name, that's not a fresh start, it's a regression waiting to happen.
+  3. **Stale assumptions** — does your plan depend on something one of those commits just changed? Code generated from context that predates the last 3 commits is working from a codebase that no longer exists.
+- **After making the change, repeat the check as a closing pass.** Confirm the new commit continues the same trajectory as the last 3 rather than reversing or duplicating something inside them — this is the same discipline as the completion gate at the top of this file, applied specifically to "does this fit with what just happened," not just "is this correct in isolation."
+- This is deliberately the same tool (`git log`) as §15.2, pointed in the opposite direction: that section looks backward *after* a bug is reported to find what broke it; this one looks backward *before* a change to avoid creating one. Both exist because recent git history is the cheapest, highest-signal context available, and skipping it in either direction wastes it.
 
 ---
 
@@ -706,6 +752,10 @@ This is the flat, skimmable summary. §18's 10-layer audit is the sequential, ru
 **Observability**
 - [ ] Every caught error is logged with real context (IDs, operation, cause) — not `console.log(e)` or silence.
 - [ ] A failure a human would want to be paged for actually increments a metric or fires an alert, not just a log line nobody watches.
+- [ ] This change logs through the project's single configured logger, not an ad hoc `console.log`/`print`; new boundary calls log on the way in and out, tagged with a correlation ID.
+
+**Recent-history check**
+- [ ] Looked at the last 3 commits touching this area before starting, and this change doesn't duplicate, contradict, or ignore what they just did.
 
 **Tests & docs**
 - [ ] Tests exist and could genuinely fail; edges + a regression test for fixed bugs.

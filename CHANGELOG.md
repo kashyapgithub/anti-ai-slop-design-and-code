@@ -5,6 +5,30 @@ local copy synced" section). This file exists so a sync — human or
 agent — can tell what's new since last time without diffing two ~800-line
 files. Grouped by milestone, not by individual commit; newest first.
 
+## 2026-07-26 (later still) — Master logging, and a proactive history check
+
+- Added §7.2 to the code guide: one centralized logger, structured log
+  lines, correlation IDs threading one operation's logs together across
+  every boundary it crosses, logging at boundaries (not just failures),
+  and consistent log levels — a "master log" as the thing that actually
+  makes a system debuggable, not just individually-caught errors.
+- Added §15.4: a proactive counterpart to §15.2's reactive triage — check
+  the last 3 commits *before* every nontrivial change (not just after a
+  complaint) for duplication, contradiction, and stale assumptions, and
+  again after finishing. Added as a fourth standing rule in "Read This
+  First."
+
+## 2026-07-26 (later) — Regression triage: check recent history first
+
+- Added §15.2 to the code guide: when a user reports "something broke,"
+  check the last 5 commits (`git log -5`, `git diff HEAD~5 HEAD --stat`)
+  before a broad re-read of the codebase or a round of clarifying
+  questions. Includes the full escalation sequence (widen the window,
+  `git bisect`, then non-git causes) and ties back to why a good commit
+  message (§15.1) pays off specifically at this moment.
+- Added as a third standing rule in "Read This First," alongside the
+  existing commit-message and comment-clarity rules.
+
 ## 2026-07-26 — Enforcement that doesn't depend on compliance
 
 - Added `enforcement/run-audit.sh`, chaining the mechanical layers of the
