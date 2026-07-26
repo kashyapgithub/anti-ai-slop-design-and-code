@@ -5,6 +5,15 @@ local copy synced" section). This file exists so a sync — human or
 agent — can tell what's new since last time without diffing two ~800-line
 files. Grouped by milestone, not by individual commit; newest first.
 
+**Fact-check status:** the guide states specific, checkable claims (the
+curl bug-bounty cancellation, Jazzband's shutdown, DORA report figures,
+etc.) as fact, not as timeless truths — they were true when added, and
+nothing re-verifies them automatically. Last spot-checked 2026-07-26
+(curl and Jazzband claims re-confirmed accurate, both with more detail
+available than when originally added). If you're an agent making heavy
+use of one of these specific claims for something consequential, verify
+it's still current rather than trusting the date above blindly.
+
 ## 2026-07-26 — Debugging discipline and enforcement that doesn't depend on compliance
 
 - Added `enforcement/run-audit.sh`, chaining the mechanical layers of the
