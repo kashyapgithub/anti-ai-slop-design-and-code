@@ -84,6 +84,8 @@ If you can't answer all three without hedging, you have not finished the task �
 
 This is a self-check, not decoration: run it every time, even when the task feels routine, even late in a long session when earlier context has scrolled out of view. Skipping it is the single most common way these instructions get ignored in practice.
 
+These three questions are the compressed version. For a nontrivial change, run the full **10-layer audit at §18** before answering them — it's the sequential, command-by-command version of this same gate, from "does it even format" through the runtime smoke check, and it's what makes the answers to questions 1–3 something you actually verified rather than something you're asserting.
+
 **Prose can't force compliance — CI can.** This repo ships a mechanical backstop for rules 1 and 2 above: `enforcement/check-architecture.sh` fails a build if a new top-level directory ships without an architecture-doc update, and `enforcement/check-integration-tests.sh` fails a build if a boundary-crossing change ships without an integration test. See `enforcement/README.md` for how to copy both into your own project's CI. If you're an agent working in a repo that already has these gates wired up, run them yourself before reporting a task done — `enforcement/check-architecture.sh <base> <head>` and `enforcement/check-integration-tests.sh <base> <head>` — instead of waiting for CI to catch it.
 
 ---
@@ -107,9 +109,10 @@ This is a self-check, not decoration: run it every time, even when the task feel
 15. [Git, Reviews & Collaboration](#15-git-reviews--collaboration)
 16. [Using AI Without Producing Slop](#16-using-ai-without-producing-slop)
 17. [Architecture & Project Structure](#17-architecture--project-structure)
-18. [The Anti-Slop Review Checklist](#18-the-anti-slop-review-checklist)
-19. [Case Study: Redis — Craft at the Systems-Programming Level](#19-case-study-redis--craft-at-the-systems-programming-level)
-20. [Further Study](#20-further-study)
+18. [The 10-Layer Audit](#18-the-10-layer-audit)
+19. [The Anti-Slop Review Checklist](#19-the-anti-slop-review-checklist)
+20. [Case Study: Redis — Craft at the Systems-Programming Level](#20-case-study-redis--craft-at-the-systems-programming-level)
+21. [Further Study](#21-further-study)
 
 ---
 
@@ -316,7 +319,7 @@ An uncaught error at least leaves a stack trace and crashes loudly enough to get
 
 ### 9.1 Write comments that can't be misread — clarity is the whole job
 
-A comment's only purpose is to leave the next reader more certain than the code alone would, not less. A comment that's technically about the right topic but ambiguous, detached, or wrong actively costs the reader more time than no comment at all, because they trust it by default and have to fight that trust once they discover it's misleading them. This is the practical version of the Redis case study's function-comment contract (§19.2): a good comment lets the reader *stop* reading and move on with confidence; a bad one makes them keep reading anyway, now suspicious of everything else you wrote.
+A comment's only purpose is to leave the next reader more certain than the code alone would, not less. A comment that's technically about the right topic but ambiguous, detached, or wrong actively costs the reader more time than no comment at all, because they trust it by default and have to fight that trust once they discover it's misleading them. This is the practical version of the Redis case study's function-comment contract (§20.2): a good comment lets the reader *stop* reading and move on with confidence; a bad one makes them keep reading anyway, now suspicious of everything else you wrote.
 
 - **Say what "it" refers to when more than one thing could be "it."** If the sentence before mentions two objects, `// retry it after a delay` doesn't tell the reader which one. Name the thing.
   ```js
@@ -569,7 +572,101 @@ An agent without an explicit map of your structure will pattern-match against th
 
 ---
 
-## 18. The Anti-Slop Review Checklist
+## 18. The 10-Layer Audit
+
+Everything else in this guide describes what good code looks like. This section is the executable procedure for checking whether a specific change actually got there — ten passes, cheapest and fastest first, each one catching a category of problem the previous layers structurally can't see. Run them in order; stop and fix before moving to the next layer, because a change that fails layer 1 will produce noise, not signal, at layer 7. Treat this as what the completion gate at the top of this file actually means in practice, not a separate, optional process.
+
+The commands below are examples for common ecosystems — substitute your project's actual toolchain (this is exactly the kind of detail that belongs in the "Project-specific context" section of `AGENTS.md`/`CLAUDE.md`, per §17.4, so it doesn't have to be rediscovered every session).
+
+**Layer 1 — Does it even parse and format?**
+The cheapest possible check; if this fails, nothing below is worth running yet.
+```bash
+npx prettier --check .        # JS/TS
+black --check .                # Python
+gofmt -l .                     # Go — any output means unformatted files
+cargo fmt --check              # Rust
+```
+
+**Layer 2 — Does it compile / type-check clean?**
+Catches an entire class of bugs before a single test runs. Per §8, this means zero new suppressions — `tsc --strict`, not `tsc` with three files under a `// @ts-nocheck`.
+```bash
+tsc --noEmit --strict          # TypeScript
+mypy --strict .                # Python
+go build ./...                 # Go
+cargo check                    # Rust
+```
+
+**Layer 3 — Static lint.**
+Catches known bug patterns and style drift the type checker won't (unused variables, unreachable code, suspicious equality checks).
+```bash
+eslint .                       # JS/TS
+ruff check .                   # Python
+golangci-lint run              # Go
+cargo clippy -- -D warnings    # Rust
+```
+
+**Layer 4 — Dependency and supply-chain audit.**
+Per §11.1: verify every dependency this change adds is real, and that nothing already in the tree has a known vulnerability.
+```bash
+npm ls <package>                 # confirm it resolves to what you think it is
+npm audit --audit-level=high
+pip-audit
+cargo audit
+git diff --stat -- package-lock.json requirements.txt Cargo.lock  # review what actually changed
+```
+
+**Layer 5 — Secrets and static security analysis (SAST).**
+Catches hardcoded credentials and known-dangerous patterns before they're ever committed, not after.
+```bash
+gitleaks detect --source . -v      # or trufflehog for the same job
+semgrep --config auto              # cross-language SAST
+bandit -r .                        # Python-specific
+gosec ./...                        # Go-specific
+```
+
+**Layer 6 — Unit tests.**
+Proves each piece is correct in isolation — necessary, per §14.1, but explicitly not sufficient on its own.
+```bash
+npm test -- --coverage
+pytest --cov=. --cov-report=term-missing
+go test ./... -cover
+```
+
+**Layer 7 — Integration tests.**
+The layer §14.1 exists to make sure nobody skips: exercise the real boundary, not a mocked one.
+```bash
+docker compose -f docker-compose.test.yml up -d   # real (test) DB, real queue, etc.
+npm run test:integration
+pytest tests/integration/
+```
+
+**Layer 8 — Architecture and structure audit.**
+Run this repo's own mechanical gates, per §17, rather than eyeballing the diff for a new stray folder.
+```bash
+enforcement/check-architecture.sh <base-ref> <head-ref>
+enforcement/check-integration-tests.sh <base-ref> <head-ref>
+```
+
+**Layer 9 — The comprehension pass.**
+The one layer no tool can run for you: read the full diff top to bottom and answer, out loud, the three completion-gate questions from the top of this file — where does this live and why, what integration test proves the pieces work together, did anything new get introduced without being surfaced as a decision. If you're hedging on any of the three, the previous eight layers passing doesn't mean the task is done.
+
+**Layer 10 — Runtime smoke check.**
+Every layer above is static or automated; this one confirms the thing actually behaves correctly when it runs, and that §7.1's observability rule actually held — that a failure would be visible, not just theoretically handled.
+```bash
+# run the actual changed path, not just its tests
+curl -i localhost:PORT/the/endpoint/you/changed
+# then confirm the expected log line / metric actually fired
+tail -f logs/app.log | grep <the-operation-you-just-touched>
+```
+If the log line or metric you expected doesn't show up here, §7.1 was violated regardless of what the unit tests say — a test can assert that a function was called; it can't assert that anyone would actually notice it failing in production.
+
+**Add a layer 11 when the change warrants it** — this list is a floor, not a ceiling. A change to a hot path might need a load/benchmark layer (`hyperfine`, `wrk`, a profiler); a change to public API surface might need a contract-diff layer (`openapi-diff`, a snapshot of the generated client). The discipline that matters is the *shape* — cheap and mechanical first, expensive and human last — not the exact count.
+
+---
+
+## 19. The Anti-Slop Review Checklist
+
+This is the flat, skimmable summary. §18's 10-layer audit is the sequential, runnable version of the same thing — use this checklist to confirm nothing's missing, and that audit to actually verify each item rather than eyeballing it.
 
 **Fit & simplicity**
 - [ ] Matches the project's conventions, formatter, and linter (all green).
@@ -620,11 +717,11 @@ An agent without an explicit map of your structure will pattern-match against th
 
 ---
 
-## 19. Case Study: Redis — Craft at the Systems-Programming Level
+## 20. Case Study: Redis — Craft at the Systems-Programming Level
 
 Every principle above is easier to see in a codebase that actually lives by it. Redis (the C core, created by Salvatore Sanfilippo — "antirez" — and maintained since as a widely used, heavily audited piece of infrastructure) is one of the most consistently cited examples of readable systems code in the industry: a database written in plain ANSI C, handling millions of ops/sec in production at companies of every size, that engineers still hold up as something to *read*, not just use. It's worth studying not because it's exotic, but because it's the same rules in this guide, applied without compromise, at a scale most projects never reach.
 
-### 19.0 Why this specific repo, and not some other database
+### 20.0 Why this specific repo, and not some other database
 
 It's worth being precise about *why* Redis is the one people point to, rather than treating the reputation as received wisdom:
 
@@ -634,7 +731,7 @@ It's worth being precise about *why* Redis is the one people point to, rather th
 - **The protocol is simple enough that reimplementing it is a standard learning exercise.** RESP (the Redis Serialization Protocol) is deliberately simple to parse, and "build your own Redis" is now a well-known teaching project — platforms built specifically around recreating real infrastructure from scratch use it as a flagship challenge, and standalone guides walk through implementing a Redis clone as a way to learn TCP servers, event loops, and wire protocols. A large fraction of the engineers who talk about Redis's code quality have, at some point, tried to reproduce a piece of it themselves — that hands-on familiarity is a big part of why the opinions about it are so specific and consistent, rather than secondhand.
 - **It's cited as a counter-example to a specific, common failure mode.** A lot of infrastructure software earns a reputation for being hard to read specifically *because* it grew multi-threaded, multi-abstraction-layer complexity to chase scale. Redis is discussed disproportionately often in these conversations because it's a rare example of software that reached massive real-world scale while making the opposite trade at almost every decision point — which is the entire reason it appears in this guide rather than as a passing reference.
 
-### 19.1 Architecture is a decision, defended in writing — not a default
+### 20.1 Architecture is a decision, defended in writing — not a default
 
 Redis's command execution is single-threaded. In 2025-era engineering culture, where "just add more threads" is often the reflex, that reads as a constraint. It's actually the load-bearing decision that makes the rest of the system simple:
 - **No locks, because there's nothing to lock.** A single thread executing commands sequentially makes every operation atomic by construction — no mutexes, no lock-ordering bugs, no deadlocks in the command path. An entire category of concurrency bugs (§12) is eliminated architecturally, not managed carefully.
@@ -643,7 +740,7 @@ Redis's command execution is single-threaded. In 2025-era engineering culture, w
 
 The lesson isn't "always be single-threaded." It's: **name your architecture's actual bottleneck before you design around a bottleneck you assume you'll have.**
 
-### 19.2 Comments earn their place — they don't decorate the code
+### 20.2 Comments earn their place — they don't decorate the code
 
 Sanfilippo has written and spoken at length about a self-imposed discipline for comments that's close to the inverse of slop-comment habits (§9): most comments in the Redis source are what he calls *guide comments* — not restating what a line does, but orienting a reader before they process a non-obvious block, the same job a paragraph break does in prose. Function-level comments are written so the reader can treat the function as a black box afterward — a contract, not a description:
 ```c
@@ -656,31 +753,31 @@ That's a *function comment*: it tells you the contract and return semantics so y
 
 New modules in the Redis codebase often open with a short block explaining the chosen algorithm and — just as importantly — **what alternatives were rejected and why**. That's the single highest-leverage comment a systems codebase can have, because it's the one piece of context version control genuinely doesn't preserve well: *why this shape and not the obvious one.*
 
-### 19.3 Small, custom data structures — chosen deliberately, not out of NIH
+### 20.3 Small, custom data structures — chosen deliberately, not out of NIH
 
 Section 10 of this guide says "reach for the standard library first." Redis's `sds` (Simple Dynamic Strings), `rax` (radix tree), and its various compact list/hash encodings look, on the surface, like a violation of that rule — hand-rolled containers instead of whatever C's minimal standard library offers. It isn't a violation; it's the exception that rule already carves out: **build custom only when a generic container would hide the exact performance or memory-layout property the system depends on, and document why.**
 - `sds` exists because C strings don't carry a length, aren't binary-safe, and reallocate unpredictably — properties a database storing arbitrary binary values genuinely cannot use a `char*` for. That's a stated, technical justification, not a preference.
 - The distinction from slop's reinvented-utility tell (§2, tell #13: reinventing `debounce`/`uuid`/date math) is intent and documentation. Reinventing `uuid` because you didn't check for a library is slop. Building a custom string type because the standard one is provably wrong for your access pattern, and writing down why, is engineering.
 
-### 19.4 Small functions, verbs that describe exactly one job
+### 20.4 Small functions, verbs that describe exactly one job
 
 Redis functions are kept short by convention — the moment one grows past roughly 100 lines, the project's own norms treat that as a signal to split it (§5). Names read as precise, active claims about behavior — `clientHasPendingReplies`, `raxSeekGreatest` — not `handleClient` or `processData` (§4's naming slop tells). A function name in this codebase is close to a spec: if you can guess the return type and side effects from the name alone, the naming did its job.
 
-### 19.5 Treat the first version as a draft — rewrite before merging
+### 20.5 Treat the first version as a draft — rewrite before merging
 
 Sanfilippo has compared writing a new component to drafting a paragraph in a novel: you write it, then you rewrite it once you actually understand the shape of the problem, because the first version is where you were still discovering the design. This is §3.5 ("make the change easy, then make the easy change") applied to greenfield work specifically — plan for the first implementation of anything nontrivial to be thrown away or substantially rewritten once it's proven correct, not shipped because it happened to work.
 
-### 19.6 Even the creator doesn't trust AI-generated systems code unread
+### 20.6 Even the creator doesn't trust AI-generated systems code unread
 
 In 2026, Sanfilippo published a detailed account of building a new Redis data type with heavy AI assistance (drafting specs, generating stress tests, reviewing algorithms) — and the account is a useful antidote to vibe-coding hype precisely because of who wrote it. His summary: *for high-quality systems programming, you still have to be fully involved.* The project took roughly four months with AI assistance, from the original creator of the software, not a novice — and a large share of that time was reading the generated code line by line, finding design errors that "superficially worked," and rewriting modules by hand once testing revealed they weren't actually solid. That's §16 of this guide, demonstrated by someone with no reason to overstate the caution: **AI can carry you into complexity you'd otherwise skip, but verification and rewriting are still the job, not a step you delegate.**
 
-### 19.7 Minimal, legible build and dependency footprint
+### 20.7 Minimal, legible build and dependency footprint
 
 Redis builds with a single `make` invocation and has historically kept its runtime dependency footprint close to libc — a deliberate rejection of the "five build tools and a dozen transitive dependencies" default that afflicts a lot of modern software (§10). Every additional build step or dependency is treated as something that has to earn its place and be explained, not something you reach for by default. This is the same principle as §10's "don't add a heavyweight dep for a three-line need" — held to a stricter standard because the thing being built is infrastructure other people's infrastructure depends on.
 
 ---
 
-## 20. Further Study
+## 21. Further Study
 
 - Robert C. Martin — *Clean Code* (read critically) & *The Clean Coder*
 - Andrew Hunt & David Thomas — *The Pragmatic Programmer*
