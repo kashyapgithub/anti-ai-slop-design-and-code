@@ -38,6 +38,22 @@ that down before it's lost.
 A stale or ambiguous comment is worse than none, because the next reader
 trusts it by default.
 
+**When a user reports "something broke," check the last 5 commits
+before anything else.** `git log -5 --oneline` and
+`git diff HEAD~5 HEAD --stat` first — not a broad re-read of the
+codebase, not a round of clarifying questions.
+
+**Before every nontrivial change, not just after a complaint, check the
+last 3 commits for the area you're touching.** `git log -3 --oneline`
+and `git diff HEAD~3 HEAD --stat` — check for duplication, contradiction
+with a recent decision, and stale assumptions before you start, and
+again after you finish.
+
+**Log through one centralized logger, not scattered `console.log`/
+`print`.** Structured log lines, a correlation ID threaded through every
+downstream call for one operation, and boundary calls logged on the way
+in and out — not just when something throws.
+
 ## Before you report a task as done
 
 Answer these explicitly in your output, not just in your own reasoning:
