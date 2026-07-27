@@ -54,6 +54,14 @@ again after you finish.
 downstream call for one operation, and boundary calls logged on the way
 in and out — not just when something throws.
 
+**After two failed attempts at the same reported issue, stop guessing
+from memory and actually research it before a third try.** Search the
+exact error text, check current docs and the changelog for the version
+in use, check the issue tracker — training data has a cutoff and is
+frequently not enough, especially for library behavior that's changed
+since. A third confident guess with no new information is the same
+failure as the first two.
+
 ## Before you report a task as done
 
 Answer these explicitly in your output, not just in your own reasoning:

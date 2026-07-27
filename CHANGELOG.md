@@ -14,6 +14,15 @@ available than when originally added). If you're an agent making heavy
 use of one of these specific claims for something consequential, verify
 it's still current rather than trusting the date above blindly.
 
+## 2026-07-27 — Escalate to real research after repeated failures
+
+- Added §15.5: after two failed attempts at the same reported issue,
+  stop guessing from memory and search — the exact error text, current
+  docs/changelog for the version in use, the issue tracker — before a
+  third try. Training data has a cutoff and is frequently insufficient,
+  especially for library behavior that's changed since. Added as a fifth
+  standing rule in "Read This First," mirrored into `templates/AGENTS.md`.
+
 ## 2026-07-26 — Debugging discipline and enforcement that doesn't depend on compliance
 
 - Added `enforcement/run-audit.sh`, chaining the mechanical layers of the

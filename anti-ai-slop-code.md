@@ -22,11 +22,12 @@ Before you write or generate a single line for a task, do this, in order:
 
 **A second rule with the same priority as architecture: never call a task finished on unit tests alone.** If the change touches more than one component — a network call, a database write, a queue, another module — write an integration test that exercises the real boundary, not just unit tests against a mocked version of it. See §14.1. This is the other place agents most reliably produce work that looks complete and isn't: every unit test green, and the actual seam between two pieces never once verified to work.
 
-**Four more standing rules, no exceptions:**
+**Five more standing rules, no exceptions:**
 - **Never commit with a message that doesn't explain *why*.** "fix stuff," "update files," or an unexplained restatement of the diff are not acceptable commit messages from an agent — see §15.1 for the full structure. If you generated the diff, you're the one person guaranteed to know why it was needed right now; write that down before it's lost.
 - **Never write a comment you haven't checked against the code it sits next to.** A comment that's wrong is worse than no comment, because the next reader — human or agent — trusts it by default. See §9.1 for what makes a comment clarify instead of confuse.
 - **When a user reports "something broke" or "this used to work," check the last 5 commits before doing anything else.** `git log -5 --oneline` and `git diff HEAD~5 HEAD --stat` first — not a broad re-read of the codebase, not five clarifying questions. Recent history is the highest-prior signal for a regression, because "used to work" means a working state existed and something changed since; that change is very likely in the last few commits. See §15.2 for the full triage sequence.
 - **Before every nontrivial change, not just after a complaint, check the last 3 commits for the area you're touching.** `git log -3 --oneline` and `git diff HEAD~3 HEAD --stat` — check for duplication, contradiction, and stale assumptions before you start, and again after you finish. See §15.4.
+- **After two failed attempts at the same reported issue, stop guessing from memory and actually research it before a third try.** Search the exact error text, check current docs and the changelog for the version in use, check the issue tracker — training data has a cutoff and is frequently not enough, especially for library behavior that's changed since. A third confident guess with no new information is the same failure as the first two. See §15.5.
 
 ### On a brand-new project: write the architecture down before you write any code
 
@@ -546,6 +547,17 @@ Practical implications:
 - **After making the change, repeat the check as a closing pass.** Confirm the new commit continues the same trajectory as the last 3 rather than reversing or duplicating something inside them — this is the same discipline as the completion gate at the top of this file, applied specifically to "does this fit with what just happened," not just "is this correct in isolation."
 - This is deliberately the same tool (`git log`) as §15.2, pointed in the opposite direction: that section looks backward *after* a bug is reported to find what broke it; this one looks backward *before* a change to avoid creating one. Both exist because recent git history is the cheapest, highest-signal context available, and skipping it in either direction wastes it.
 
+### 15.5 After two failed attempts at the same issue, stop guessing from memory and actually research it
+
+Training data has a cutoff and is unavoidably incomplete — library APIs change, error conditions get fixed or reclassified in newer versions, and plenty of real-world edge cases only exist in an issue tracker or changelog that postdates training entirely. An agent that proposes a third variation of the same fix after two have already failed isn't debugging anymore — it's pattern-matching against memory that has already been shown insufficient, which is the same "plausibility over correctness" failure from §1, applied to fixing instead of writing.
+
+- **The trigger is concrete: if the same reported issue is still unresolved after two attempts, stop before a third guess and search first.** Two misses is the signal that the problem is outside what you already know — not a signal to try harder from the same starting point.
+- **Search the exact error message or symptom text, not a paraphrase of it.** Error strings and stack traces are often specific enough to lead straight to the exact GitHub issue, changelog entry, or discussion describing this precise problem — a paraphrase throws that specificity away.
+- **Check current documentation and the changelog for the exact version in use**, not a memory of what the API looked like at training time. A method's signature, a config flag's default, or a behavior may have changed since — and "this used to work this way" is exactly the kind of confident, stale assumption this guide warns about everywhere else.
+- **Check the library's issue tracker for the specific version.** A bug that's already reported, already fixed in a later release, or explicitly called a known limitation is a different situation — and a different fix — than blind trial and error against a problem nobody's written down yet.
+- **Read enough of what you find to understand *why* the first two attempts failed**, not just to copy a third guess. The goal is closing the actual gap in what you know, not increasing the sample size of attempts.
+- **This isn't "give up and hand it back to the user" — it's the alternative to that.** Two failed attempts followed by a third confident guess trains the person to expect to re-explain the same problem repeatedly; two failed attempts followed by "let me check the current docs/issue tracker for this" is what actually closes the gap training data can't.
+
 ---
 
 ## 16. Using AI Without Producing Slop
@@ -756,6 +768,7 @@ This is the flat, skimmable summary. §18's 10-layer audit is the sequential, ru
 
 **Recent-history check**
 - [ ] Looked at the last 3 commits touching this area before starting, and this change doesn't duplicate, contradict, or ignore what they just did.
+- [ ] If this is a 3rd+ attempt at the same reported issue, it's grounded in an actual search of current docs/error text/issue tracker — not a third guess from memory.
 
 **Tests & docs**
 - [ ] Tests exist and could genuinely fail; edges + a regression test for fixed bugs.
