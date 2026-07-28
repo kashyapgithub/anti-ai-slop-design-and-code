@@ -49,10 +49,13 @@ and `git diff HEAD~3 HEAD --stat` — check for duplication, contradiction
 with a recent decision, and stale assumptions before you start, and
 again after you finish.
 
-**Log through one centralized logger, not scattered `console.log`/
-`print`.** Structured log lines, a correlation ID threaded through every
-downstream call for one operation, and boundary calls logged on the way
-in and out — not just when something throws.
+**Log through one centralized logger, generously, not scattered
+`console.log`/`print`.** Every significant function or step traces its
+entry, exit, and branch taken at `debug` level, correlated by an ID
+threaded through the whole operation — enough that any flow can be
+reconstructed from logs alone after the fact, without re-running the
+code. Redact sensitive fields even at debug level; summarize
+high-frequency loops instead of one line per iteration.
 
 **After two failed attempts at the same reported issue, stop guessing
 from memory and actually research it before a third try.** Search the

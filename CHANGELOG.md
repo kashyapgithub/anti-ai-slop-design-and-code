@@ -14,6 +14,20 @@ available than when originally added). If you're an agent making heavy
 use of one of these specific claims for something consequential, verify
 it's still current rather than trusting the date above blindly.
 
+## 2026-07-27 (later) — Trace-level debug logging, and fixing a source-of-truth gap
+
+- Added §7.3: instrument every significant function/step with entry,
+  exit, and branch-taken traces at `debug` level, correlated by ID, so
+  any flow can be reconstructed from logs alone after the fact — with
+  the same redaction and hot-loop-summarization limits as §7.2, and
+  toggleable on demand rather than always-on in production.
+- Fixed a real inconsistency this repo had drifted into: master logging
+  had been added to `templates/AGENTS.md` in an earlier pass without
+  ever becoming an actual standing rule in the source "Read This First"
+  — the condensed file had content the full guide didn't. Added it
+  properly as the sixth standing rule and re-synced `templates/AGENTS.md`
+  against it.
+
 ## 2026-07-27 — Escalate to real research after repeated failures
 
 - Added §15.5: after two failed attempts at the same reported issue,
