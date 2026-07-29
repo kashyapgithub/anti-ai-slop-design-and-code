@@ -19,6 +19,13 @@ set -euo pipefail
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 cd "$REPO_ROOT"
 
+# Destructive-ops check runs first and unconditionally — this is the
+# guide's highest-priority rule, so it's not gated behind whether
+# run-audit.sh happens to be configured for this project.
+if [[ -x "enforcement/check-destructive-ops.sh" ]]; then
+  enforcement/check-destructive-ops.sh --staged
+fi
+
 if [[ ! -x "enforcement/run-audit.sh" ]]; then
   echo "enforcement/run-audit.sh not found or not executable — skipping audit." >&2
   exit 0

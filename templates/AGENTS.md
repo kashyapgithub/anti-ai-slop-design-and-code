@@ -9,6 +9,30 @@ full before nontrivial work — see "Keep your local copy synced" inside
 each for the exact pull commands. What follows is the condensed,
 non-negotiable subset so it's in context even before you've fetched them.
 
+## Before every tool call, in every task: never destroy data
+
+Check every single tool call — not just the ones that look risky —
+against this before running it. This outranks the architecture rule
+below and everything else in this file.
+
+- Treat as destructive by default: `DROP`, `TRUNCATE`, a raw `DELETE`
+  without a `WHERE` you've personally verified, `rm -rf`, any cloud
+  console/CLI delete, a force-push, `git reset --hard`/`git clean -fd`,
+  dropping a volume, deleting a secret or key.
+- Verify the real target (connection string, env var, kubeconfig
+  context) immediately before running — not from memory of a few tool
+  calls ago. A correct destructive command against the wrong target is
+  the most common real cause of an agent destroying production data.
+- If a request's scope is ambiguous ("reset the dev database" could mean
+  some rows, a table, or the whole database), ask — don't guess toward
+  the broader, more destructive interpretation.
+- Prefer non-destructive by default: soft delete, `--dry-run` first, a
+  rollback-able transaction, a fresh backup taken right before, an
+  explicit `WHERE`/`LIMIT` read twice.
+- State what the command does and what's irreversible about it, and get
+  explicit human confirmation for that specific execution — every time,
+  not carried over from an earlier confirmation this session.
+
 ## Non-negotiable, every task
 
 **Architecture is decided before code is written, not discovered by

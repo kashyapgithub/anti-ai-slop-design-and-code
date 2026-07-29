@@ -1,5 +1,16 @@
 {
   "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "set -euo pipefail; INPUT=$(cat); CMD=$(echo \"$INPUT\" | jq -r '.tool_input.command // empty'); [ -z \"$CMD\" ] && exit 0; FALLBACK_REGEX='\\bDROP[[:space:]]+(TABLE|DATABASE|SCHEMA|INDEX)\\b|\\bTRUNCATE[[:space:]]+TABLE\\b|rm[[:space:]]+-rf[[:space:]]|git[[:space:]]+reset[[:space:]]+--hard|git[[:space:]]+clean[[:space:]]+-[a-z]*f|git[[:space:]]+push[[:space:]].*(--force\\b|-f\\b)'; FALLBACK_MARKER='CONFIRMED-DESTRUCTIVE'; source enforcement/config.env 2>/dev/null || true; REGEX=\"${DESTRUCTIVE_OP_REGEX:-$FALLBACK_REGEX}\"; MARKER=\"${DESTRUCTIVE_OP_CONFIRM_MARKER:-$FALLBACK_MARKER}\"; if echo \"$CMD\" | grep -Eq \"$REGEX\"; then if echo \"$CMD\" | grep -Fq \"$MARKER\"; then exit 0; fi; echo \"BLOCKED: this command matches a destructive-operation pattern (DROP/TRUNCATE/unscoped DELETE/rm -rf/force-push/git reset --hard). Per anti-ai-slop-code.md's top-priority rule, get explicit human confirmation for this exact command, then re-run it with the literal text '$MARKER' included (e.g. as a trailing comment) if it's genuinely intended.\" >&2; exit 2; fi; exit 0"
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "hooks": [

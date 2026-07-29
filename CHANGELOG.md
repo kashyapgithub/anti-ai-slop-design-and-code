@@ -28,6 +28,34 @@ it's still current rather than trusting the date above blindly.
   properly as the sixth standing rule and re-synced `templates/AGENTS.md`
   against it.
 
+## 2026-07-27 (later) — Never destroy data: the highest-priority rule and its mechanical backstops
+
+- Added a new top-priority rule at the very start of "Read This First" —
+  ranked above even the architecture rule — that any tool call must be
+  checked against before running: never delete/drop/truncate/overwrite
+  a database, table, file, volume, branch, or secret without explicit
+  human confirmation for that exact operation, every time, no matter how
+  confident or how many similar commands already ran safely this session.
+- Added `enforcement/check-destructive-ops.sh`: scans a diff (or, with
+  `--staged`, what's about to be committed) for DROP/TRUNCATE/unscoped
+  DELETE/`rm -rf`/force-push/`git reset --hard`/`git clean -fd`, and
+  fails unless the line carries an explicit `CONFIRMED-DESTRUCTIVE: ...`
+  marker. Wired into `templates/pre-commit`, running first,
+  unconditionally, ahead of the rest of the audit.
+- Added a `PreToolUse` hook to `templates/claude-code-settings.json` that
+  intercepts every `Bash` tool call and blocks a matching destructive
+  command *before it executes* — the piece `check-destructive-ops.sh`
+  alone can't cover, since a command run directly against a live
+  database (not committed to a file) never shows up in a git diff.
+- Found and fixed three real bugs during testing, not just written and
+  assumed correct: the destructive-ops scanner was flagging its own
+  documentation/comments as violations; `git push -f` shorthand wasn't
+  originally caught; and the `PreToolUse` hook **failed open** (silently
+  allowed a destructive command through) if `enforcement/config.env`
+  couldn't be found — fixed to fail closed with a hardcoded fallback
+  pattern instead. All caught by deliberately testing the missing-config
+  and self-referential-documentation cases, not by inspection.
+
 ## 2026-07-27 — Escalate to real research after repeated failures
 
 - Added §15.5: after two failed attempts at the same reported issue,

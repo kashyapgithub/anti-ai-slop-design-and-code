@@ -3,9 +3,18 @@
 Everything in `anti-ai-slop-code.md`'s "Read This First" section is written
 as an instruction to an AI agent — and an instruction in a markdown file is
 context, not code. An agent can still skip it, especially deep into a long
-session. These two scripts are the mechanical backstop for the two rules
-that section calls top priority:
+session. These scripts are the mechanical backstop for the rules that
+section calls top priority — in priority order:
 
+0. **Never destroy data, not even by accident** — `check-destructive-ops.sh`
+   fails a build (or, installed as a pre-commit hook, refuses the commit
+   outright) if the diff adds a `DROP`/`TRUNCATE`/unscoped `DELETE`,
+   `rm -rf`, a force-push, or a `git reset --hard`/`git clean -fd` without
+   an explicit `CONFIRMED-DESTRUCTIVE: ...` marker on that line or the one
+   above it. This is the highest-priority gate in this folder — it runs
+   before the other two, and it's the one wired into
+   `templates/pre-commit` unconditionally, regardless of whether the rest
+   of `run-audit.sh` is even configured.
 1. **Architecture is a decision, not a side effect** — `check-architecture.sh`
    fails a PR that introduces a brand-new top-level directory without also
    touching an architecture doc (`ARCHITECTURE.md` / `AGENTS.md` / etc.) in
@@ -28,14 +37,31 @@ own hook system, not just run by hand, so the check happens automatically
 mid-session, before the agent even reports the task done.
 
 For Claude Code specifically, `templates/claude-code-settings.json` wires
-this in for real: a `Stop` hook runs `run-audit.sh` every time Claude
-finishes responding, and if it fails, exits with code 2 — which per
-Claude Code's hook system forces Claude to keep working instead of
-stopping, regardless of what the model itself decided. This is a
-genuinely different guarantee than anything else in this repo: it doesn't
-rely on the agent choosing to comply, because a Stop hook runs
-deterministically outside the model's control. Copy that file to
-`.claude/settings.json` (or merge it into an existing one) to use it.
+this in for real, with two different hooks doing two different jobs:
+
+- **`PreToolUse` on the `Bash` tool** intercepts every shell command
+  *before* it runs and blocks it (exit code 2, command never executes)
+  if it matches a destructive pattern without the confirmation marker —
+  this is what actually stops an agent from running
+  `psql -c "DROP DATABASE prod;"` directly, since `check-destructive-ops.sh`
+  alone only catches destructive operations that get committed to a
+  file, not ones run ad hoc against a live database. **This hook fails
+  closed, not open**: if `enforcement/config.env` can't be found or
+  loaded for any reason, it falls back to a hardcoded minimal pattern
+  (DROP/TRUNCATE/`rm -rf`/force-push/`git reset --hard`) rather than
+  silently allowing everything through — an earlier version of this
+  hook failed open on a missing config file, which is exactly backwards
+  for a safety gate, and was caught and fixed by testing that specific
+  case deliberately.
+- **`Stop`** runs `run-audit.sh` every time Claude finishes responding,
+  and if it fails, exits with code 2 — which per Claude Code's hook
+  system forces Claude to keep working instead of stopping, regardless
+  of what the model itself decided.
+
+Both are a genuinely different guarantee than anything else in this
+repo: they don't rely on the agent choosing to comply, because these
+hooks run deterministically outside the model's control. Copy the file
+to `.claude/settings.json` (or merge it into an existing one) to use it.
 
 Other tools' equivalents, as of mid-2026 — check before assuming, this
 moves fast:
@@ -72,19 +98,30 @@ actually checked.
    - `INTEGRATION_TEST_REGEX` — how your project names integration tests.
    - `BOUNDARY_EXEMPT_REGEX` — narrow exceptions (generated code, type-only
      files) that touch a boundary path but genuinely don't need a test.
-4. Push a PR and confirm both jobs run and pass on a normal change, then
+   - `DESTRUCTIVE_OP_REGEX` / `DESTRUCTIVE_OP_CONFIRM_MARKER` /
+     `DESTRUCTIVE_OP_EXEMPT_REGEX` — the patterns that count as destructive,
+     the marker required to ship one deliberately, and paths (docs, this
+     tooling's own files) that are exempt because they describe these
+     patterns rather than execute them.
+4. Install `templates/pre-commit` as `.git/hooks/pre-commit` — this is the
+   one gate you want running locally, before a commit, not just in CI
+   after the fact.
+5. Push a PR and confirm all jobs run and pass on a normal change, then
    confirm they correctly fail on a change that should trip them (add a new
-   top-level folder with no doc update; touch a boundary path with no test)
-   before relying on them.
-5. Fill in the `AUDIT_*` commands in `config.env` and, if you're on Claude
+   top-level folder with no doc update; touch a boundary path with no test;
+   add an unconfirmed `DROP TABLE`) before relying on them.
+6. Fill in the `AUDIT_*` commands in `config.env` and, if you're on Claude
    Code, copy `templates/claude-code-settings.json` to `.claude/settings.json`
    so `run-audit.sh` runs automatically at the end of every turn.
 
 ## Running locally
 
-Both scripts take a base ref and a head ref and work outside CI too:
+All three scripts take a base ref and a head ref and work outside CI too
+(`check-destructive-ops.sh` also takes `--staged` for checking what's
+about to be committed):
 
 ```bash
+enforcement/check-destructive-ops.sh --staged
 enforcement/check-architecture.sh main HEAD
 enforcement/check-integration-tests.sh main HEAD
 ```
@@ -97,9 +134,23 @@ scriptable version of the "completion gate" self-check in
 ## What this doesn't do
 
 These gates catch structural signals — a new folder, a touched boundary
-path — not judgment. A PR can still add a new folder that's a bad
-architectural decision correctly documented, or add a technically-present
-but useless integration test (an integration test that mocks out the real
-boundary is exactly the failure the guide's integration-testing section warns about, and no regex can catch
-that). The gates raise the cost of skipping the process; they don't
-replace a human — or a careful agent — actually reading the diff.
+path, a known-dangerous keyword — not judgment. A PR can still add a new
+folder that's a bad architectural decision correctly documented, or add a
+technically-present but useless integration test (an integration test
+that mocks out the real boundary is exactly the failure the guide's
+integration-testing section warns about, and no regex can catch that).
+`check-destructive-ops.sh` specifically only catches the patterns in
+`DESTRUCTIVE_OP_REGEX` — a destructive ORM call (`Model.objects.all().delete()`),
+a stored procedure, or an admin panel action that drops data without
+matching any of those literal keywords will not be caught. Extend the
+regex for your stack's actual danger patterns rather than trusting the
+defaults to be exhaustive. The `PreToolUse` hook only intercepts the
+`Bash` tool — a destructive action taken through an MCP database tool,
+an API call, or any other tool the agent has access to isn't covered by
+it, and its fallback pattern (used when `config.env` can't be loaded) is
+deliberately narrower than the full configured regex, so a correctly
+loaded config still matters. The gates raise the cost of skipping the
+process; they don't replace a human — or a careful agent — actually
+reading the diff, or actual database-level safeguards (backups, least-
+privilege credentials, a read replica for anything exploratory) that
+don't depend on this repo's tooling at all.
