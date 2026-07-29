@@ -28,6 +28,18 @@ it's still current rather than trusting the date above blindly.
   properly as the sixth standing rule and re-synced `templates/AGENTS.md`
   against it.
 
+## 2026-07-27 (later) — Strict no-emoji-in-UI rule
+
+- Added a new top-priority rule at the very start of the design guide's
+  "Read This First," ranked directly below the visual-system rule:
+  never place an emoji anywhere a real person will see it rendered as
+  UI — not as an icon, not in generated copy, not "just one, sparingly."
+  Explicit exceptions only for content that's itself about emoji (a
+  picker, a real user's own message) or an explicit, specific request.
+  Broadened the matching checklist item and mirrored a condensed version
+  into `templates/AGENTS.md` for any project with a UI, not just ones
+  using the design guide directly.
+
 ## 2026-07-27 (later) — Never destroy data: the highest-priority rule and its mechanical backstops
 
 - Added a new top-priority rule at the very start of "Read This First" —

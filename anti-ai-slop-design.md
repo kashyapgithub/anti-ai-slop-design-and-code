@@ -10,6 +10,16 @@
 
 If you are an AI agent generating UI, styling, or a design system as context, instructions, or a style guide, this section is written directly to you and takes priority over the general rules that follow.
 
+## The rule that outranks visual-system decisions: never use emoji in any UI
+
+Never place an emoji character in anything a real person will see rendered as an interface — not as an icon, not as a bullet, not as decoration next to a heading, not inside a button or badge label, not in an empty state, a toast, a notification, or navigation. This is not weighed against the brand's tone; it's excluded regardless of tone, including a tone that's meant to be playful or fun.
+
+- **This is one of this guide's own named tells** (§2, tell #3) precisely because emoji-as-icon signals no one made an icon decision. A real icon set, chosen deliberately and applied consistently (§7), is the actual bar — not optional ceremony to skip when short on time.
+- **"Sparingly" doesn't make it acceptable.** A single 🚀 next to one headline is exactly as much of a tell as five scattered across a page — the rule is *never*, not *not too many*.
+- **This includes emoji inside generated copy that renders in the UI** — a success message, a badge label, a marketing headline — not just emoji used explicitly as icons. If a string you write will render on screen and it contains an emoji character, that's UI emoji, whether you were "writing," not "designing," at the time.
+- **The one exception is content that is itself about emoji or written by a real person**: an emoji picker component, a chat message a user actually typed, a reaction feature. This rule is about what you add to interface chrome and generated copy by default — not about stripping emoji out of a real person's own content.
+- **If a task explicitly and specifically asks for an emoji** ("add a 🎉 to the celebration screen"), that's a direct instruction to follow, not a default to apply everywhere else. This rule governs the default; it doesn't override an explicit, specific request for one particular case.
+
 **A visual system is decided before the first component is generated, not discovered by generating components.** Per §12.1, a generic instruction hands every taste decision to you at once, and without constraints you will fill all of them with the statistical mean — the indigo gradient, the bento grid, the Lucide icon set, the centered hero (§2.1). That isn't a failure of effort; it's what "most probable" means when nothing has told you which direction to commit to. The fix is the same one this guide's companion code guide gives for architecture: **decide the visual system explicitly, write it down, and generate from it — don't let it emerge as a side effect of building the first screen.**
 
 Before you generate the first component, page, or style for a task, do this, in order:
@@ -487,7 +497,7 @@ This is the same imperative-mood, why-not-what structure covered for code in [§
 
 **Components & content**
 - [ ] Every interactive element has all states, including `:focus-visible`.
-- [ ] No emoji as UI icons; one coherent icon set.
+- [ ] No emoji anywhere in the rendered UI — not as icons, not in copy, not "just one" for accent; one coherent icon set used instead.
 - [ ] Empty, loading, and error states are designed.
 - [ ] Copy is specific and outcome-oriented; CTAs are contextual.
 - [ ] Real content stress-tested (long/empty/huge/RTL).

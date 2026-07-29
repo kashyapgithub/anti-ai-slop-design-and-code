@@ -33,6 +33,17 @@ below and everything else in this file.
   explicit human confirmation for that specific execution — every time,
   not carried over from an earlier confirmation this session.
 
+## If this project has a UI: never use emoji in it
+
+Never place an emoji character anywhere a real person will see it
+rendered as an interface — not as an icon, not as decoration next to a
+heading, not in a button/badge label, not in generated copy that renders
+on screen. Not weighed against tone; excluded regardless of tone. "Just
+one, sparingly" is still a violation — the rule is never, not rarely.
+Exceptions: content that's itself about emoji (an emoji picker, a real
+user's own typed message) and an explicit, specific request for one
+particular case. Use a real, consistent icon set instead.
+
 ## Non-negotiable, every task
 
 **Architecture is decided before code is written, not discovered by
