@@ -42,7 +42,14 @@ on screen. Not weighed against tone; excluded regardless of tone. "Just
 one, sparingly" is still a violation — the rule is never, not rarely.
 Exceptions: content that's itself about emoji (an emoji picker, a real
 user's own typed message) and an explicit, specific request for one
-particular case. Use a real, consistent icon set instead.
+particular case.
+
+This is not a rule against icons — only against emoji standing in for
+them. Where an icon is genuinely needed (a settings gear, a delete/trash
+action, an expand chevron), use a real one from the project's existing
+icon set (Lucide, Phosphor, Radix, or whatever's already in use) at a
+consistent stroke weight — never an emoji "standing in" for it, and
+never a one-off icon from a different set than the rest of the UI.
 
 ## Non-negotiable, every task
 

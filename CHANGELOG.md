@@ -28,6 +28,18 @@ it's still current rather than trusting the date above blindly.
   properly as the sixth standing rule and re-synced `templates/AGENTS.md`
   against it.
 
+## 2026-07-27 (later still) — Icon vs. emoji: clarifying what's actually banned
+
+- Refined the no-emoji-in-UI rule to make clear it's not a rule against
+  icons — only against emoji standing in for them. Added the actual
+  distinction (§7.4): an icon is a purpose-built, restylable graphic
+  from a coherent system; an emoji is a fixed, full-color pictograph
+  built for messaging, not UI, which is why it always looks pasted on.
+  Icons remain fully fine, even necessary, when drawn from the project's
+  existing coherent set at a consistent stroke weight — the violation is
+  specifically reaching for a cringe emoji substitute instead. Mirrored
+  into `templates/AGENTS.md` and the checklist.
+
 ## 2026-07-27 (later) — Strict no-emoji-in-UI rule
 
 - Added a new top-priority rule at the very start of the design guide's

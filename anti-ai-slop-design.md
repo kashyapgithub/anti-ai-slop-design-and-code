@@ -12,9 +12,10 @@ If you are an AI agent generating UI, styling, or a design system as context, in
 
 ## The rule that outranks visual-system decisions: never use emoji in any UI
 
-Never place an emoji character in anything a real person will see rendered as an interface — not as an icon, not as a bullet, not as decoration next to a heading, not inside a button or badge label, not in an empty state, a toast, a notification, or navigation. This is not weighed against the brand's tone; it's excluded regardless of tone, including a tone that's meant to be playful or fun.
+Never place an emoji character in anything a real person will see rendered as an interface — not as an icon, not as a bullet, not as decoration next to a heading, not inside a button or badge label, not in an empty state, a toast, a notification, or navigation. This is not weighed against the brand's tone; it's excluded regardless of tone, including a tone that's meant to be playful or fun. **This is not a rule against icons — it's a rule against emoji standing in for them.** Use a real icon wherever one is genuinely needed; never reach for an emoji to fill that need or to "add something visual."
 
-- **This is one of this guide's own named tells** (§2, tell #3) precisely because emoji-as-icon signals no one made an icon decision. A real icon set, chosen deliberately and applied consistently (§7), is the actual bar — not optional ceremony to skip when short on time.
+- **Know the difference before generating anything.** An icon is a purpose-built graphic from a coherent system — consistent stroke, consistent grid, designed to sit next to text and match the interface around it. An emoji is a fixed, full-color pictograph built for informal messaging, not for UI — it can't be restyled to match anything, which is exactly why it always looks pasted-on. See §7.4 for the full distinction and when an icon is actually warranted.
+- **This is one of this guide's own named tells** (§2, tell #3) precisely because emoji-as-icon signals no one made an icon decision. A real icon set, chosen deliberately and applied consistently (§7.4), is the actual bar — not optional ceremony to skip when short on time.
 - **"Sparingly" doesn't make it acceptable.** A single 🚀 next to one headline is exactly as much of a tell as five scattered across a page — the rule is *never*, not *not too many*.
 - **This includes emoji inside generated copy that renders in the UI** — a success message, a badge label, a marketing headline — not just emoji used explicitly as icons. If a string you write will render on screen and it contains an emoji character, that's UI emoji, whether you were "writing," not "designing," at the time.
 - **The one exception is content that is itself about emoji or written by a real person**: an emoji picker component, a chat message a user actually typed, a reaction feature. This rule is about what you add to interface chrome and generated copy by default — not about stripping emoji out of a real person's own content.
@@ -327,8 +328,15 @@ Exactly one **primary** with real presence per view. Secondary and tertiary must
 ### 7.3 Cards, used responsibly
 If you must use cards: vary size by importance, prefer **1px borders** over stacking identical shadows, and don't wrap *everything* in a card. A page that is only cards has no hierarchy.
 
-### 7.4 Iconography
-Use **one** coherent icon set at a consistent stroke weight and grid — Lucide, Phosphor, Radix Icons, or a custom set. Match icon stroke to your type weight. **Never emoji as UI icons.** Give icons accessible labels (`aria-label`) or hide decorative ones (`aria-hidden="true"`).
+### 7.4 Iconography — and the actual difference between an icon and an emoji
+
+An **icon** is a purpose-built graphic from a coherent system: consistent stroke weight, consistent grid size, consistent corner radius, designed to sit at small sizes next to text and to be recolored/resized to match the interface around it. An **emoji** is a fixed, full-color, expressive pictograph designed for informal human-to-human messaging (Unicode text, not a design asset) — its color, style, and "personality" are baked in and can't be made to match anything. That's the whole distinction, and it's why one belongs in UI and the other doesn't: an icon is a component; an emoji is a sticker.
+
+- **Use icons where a piece of UI genuinely needs one** — a settings gear, a trash/delete action, a chevron for expand/collapse, a status indicator. That's a real, common need, and the fix is never "avoid icons entirely" — it's "use a real one instead of a substitute."
+- **Never reach for an emoji as a stand-in for an icon, "just to add something visual" or to seem friendlier.** A 🗑️ where a real trash icon belongs, a ✅ where a real checkmark icon belongs, a 📁 where a real folder icon belongs — these are the exact cringe-emoji-as-icon substitution this guide calls out, and they're worse than having no icon at all, because they clash with everything around them and read as a placeholder nobody replaced.
+- **When an icon is genuinely warranted, pick it from the same coherent set as the rest of the interface** — Lucide, Phosphor, Radix Icons, Heroicons, or a custom set — never mixed sets, and never a one-off emoji sitting next to icons from a real system. Match stroke weight to type weight (a thin type weight with heavy-stroke icons looks like a mismatch even before anyone can say why).
+- **The test for "absolutely necessary":** does this exact spot need a compact, recolorable, resizable graphic that carries a specific, repeatable meaning (delete, warning, expand)? If yes, use a real icon from the project's set. If the honest answer is "it would just look nice here" or "it matches the playful tone," that's decoration, not necessity — leave it out rather than fill the gap with an emoji.
+- **Give icons accessible labels** (`aria-label`) or hide decorative ones (`aria-hidden="true"`) — a real icon still needs this; an emoji standing in for one usually gets neither, which is a second, separate failure on top of the aesthetic one.
 
 ### 7.5 Forms (where craft is proven)
 - Labels are always visible (placeholder-as-label fails accessibility and usability).
@@ -497,7 +505,7 @@ This is the same imperative-mood, why-not-what structure covered for code in [§
 
 **Components & content**
 - [ ] Every interactive element has all states, including `:focus-visible`.
-- [ ] No emoji anywhere in the rendered UI — not as icons, not in copy, not "just one" for accent; one coherent icon set used instead.
+- [ ] No emoji anywhere in the rendered UI — not as icons, not in copy, not "just one" for accent. Where an icon is genuinely needed, it's a real one from the project's coherent icon set, not an emoji substitute.
 - [ ] Empty, loading, and error states are designed.
 - [ ] Copy is specific and outcome-oriented; CTAs are contextual.
 - [ ] Real content stress-tested (long/empty/huge/RTL).
