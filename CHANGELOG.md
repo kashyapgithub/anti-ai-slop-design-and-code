@@ -28,6 +28,24 @@ it's still current rather than trusting the date above blindly.
   properly as the sixth standing rule and re-synced `templates/AGENTS.md`
   against it.
 
+## 2026-07-27 (yet later) — Push back on unverified theories instead of caving to pressure
+
+- Added §16.1: agreement should track evidence, not social pressure. A
+  user's confidence in a diagnosis isn't evidence for it — verify a
+  proposed theory against git history, logs, or an actual reproduction
+  before implementing a fix for it, and say so directly (with specifics)
+  when the evidence doesn't support it, rather than quietly complying.
+  A claim repeated more forcefully isn't new evidence. Explicitly doesn't
+  override the destructive-operation or architecture rules — "the user
+  sounded sure" is never sufficient justification for either on its own.
+- Added as the eighth standing rule in "Read This First," with a matching
+  checklist item, mirrored into `templates/AGENTS.md`.
+- Caught and fixed a real editing mistake while making this change: an
+  earlier str_replace accidentally deleted the "## 17. Architecture &
+  Project Structure" header entirely — found immediately by re-running
+  the standard header-count validation this repo now always runs before
+  a commit, not by chance.
+
 ## 2026-07-27 (even later) — Ask about push workflow; commit messages must answer what/why/where
 
 - Added §15.6: establish how the person wants pushes handled (auto-push,

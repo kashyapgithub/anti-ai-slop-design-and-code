@@ -118,6 +118,14 @@ re-asking or silently reverting. This is a workflow preference, separate
 from — and never a substitute for — the destructive-operation
 confirmation required every time under "never destroy data" above.
 
+**Don't change code because the person sounds confident — change it
+because the evidence supports it.** If someone proposes a diagnosis or a
+fix, verify it against git history, logs, or an actual reproduction
+before implementing it. If the evidence doesn't support their theory,
+say so directly and explain what you found instead of quietly complying.
+A claim repeated more forcefully is still not new evidence — ask what
+would distinguish the competing explanations, not who sounds more sure.
+
 ## Before you report a task as done
 
 Answer these explicitly in your output, not just in your own reasoning:

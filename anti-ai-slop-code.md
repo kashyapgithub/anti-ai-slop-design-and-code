@@ -34,7 +34,7 @@ Before you write or generate a single line for a task, do this, in order:
 
 **A second rule with the same priority as architecture: never call a task finished on unit tests alone.** If the change touches more than one component — a network call, a database write, a queue, another module — write an integration test that exercises the real boundary, not just unit tests against a mocked version of it. See §14.1. This is the other place agents most reliably produce work that looks complete and isn't: every unit test green, and the actual seam between two pieces never once verified to work.
 
-**Seven more standing rules, no exceptions:**
+**Eight more standing rules, no exceptions:**
 - **Never commit with a message that doesn't explain *why*.** "fix stuff," "update files," or an unexplained restatement of the diff are not acceptable commit messages from an agent — see §15.1 for the full structure. Every commit message answers what, why, and where, technically and specifically — not just what the diff already shows.
 - **Never write a comment you haven't checked against the code it sits next to.** A comment that's wrong is worse than no comment, because the next reader — human or agent — trusts it by default. See §9.1 for what makes a comment clarify instead of confuse.
 - **Log through one centralized logger, generously, not scattered `console.log`/`print`.** Every significant function or step traces its entry, exit, and branch taken at `debug` level, correlated by an ID threaded through the whole operation — enough that any flow can be reconstructed from logs alone after the fact, without re-running the code. See §7.2 and §7.3.
@@ -42,6 +42,7 @@ Before you write or generate a single line for a task, do this, in order:
 - **Before every nontrivial change, not just after a complaint, check the last 3 commits for the area you're touching.** `git log -3 --oneline` and `git diff HEAD~3 HEAD --stat` — check for duplication, contradiction, and stale assumptions before you start, and again after you finish. See §15.4.
 - **After two failed attempts at the same reported issue, stop guessing from memory and actually research it before a third try.** Search the exact error text, check current docs and the changelog for the version in use, check the issue tracker — training data has a cutoff and is frequently not enough, especially for library behavior that's changed since. A third confident guess with no new information is the same failure as the first two. See §15.5.
 - **Establish how the person wants pushes handled, early, and honor it — don't guess a workflow.** Auto-push, hold for confirmation, or batch-and-confirm are all valid; which one is a preference to ask about, not infer. This is a workflow setting, separate from and never a substitute for the destructive-operation confirmation at the very top of this file. See §15.6.
+- **Don't change code because a user sounds confident — change it because the evidence supports it.** If someone proposes a diagnosis or a fix, verify it against git history, logs, or an actual reproduction before implementing it; if the evidence doesn't support their theory, say so directly and explain what you found instead of quietly complying. Ask the tough question rather than avoiding friction — agreement should track evidence, not social pressure, and a claim repeated more forcefully is still not new evidence. See §16.1.
 
 ### On a brand-new project: write the architecture down before you write any code
 
@@ -618,6 +619,17 @@ AI is a fast junior pair-programmer, not an oracle. To avoid shipping its slop:
 - **Scope agentic changes tightly.** Ask for one function, one file, one concern per turn; a multi-file "helpful" refactor you didn't ask for is scope creep that hides the real change.
 - **Watch for the fix-the-symptom pattern**: an agent that makes a failing test pass by loosening the assertion, or a lint error disappear by disabling the rule, has produced slop that looks like a fix.
 
+### 16.1 Agreement should track evidence, not social pressure — push back on unverified theories
+
+An agent under pressure to be helpful has a real bias toward agreeing: a user proposes a diagnosis or a fix, and the path of least resistance is to start implementing it immediately, because pushing back feels like friction and complying feels like progress. That bias produces a specific, common failure: a confident-looking, plausible change that fixes the thing the user *believed* was wrong, not the thing that was actually wrong — which is exactly the "plausibility over correctness" pattern from §1, just triggered by social pressure instead of a gap in training data.
+
+- **A user's confidence in a diagnosis is not evidence for it.** "I think it's the caching layer" is a hypothesis, not a finding, no matter how certain the person sounds. Before changing code to fix it, verify it the same way §15.2 already requires for any regression: check recent git history, check the logs (§7.2/§7.3), reproduce the symptom, or otherwise ground the theory in something checkable — don't start editing the caching layer on their say-so alone.
+- **If the evidence doesn't support the user's theory, say so directly, with specifics — don't quietly comply while privately doubting it.** "I checked the last 5 commits and the logs for this request path — the caching layer hasn't changed and cache hit rate looks normal. The timeout value changed in the commit before last, which lines up better with when this started. Want me to look there instead?" is more helpful than silently patching the cache and hoping that was it.
+- **Ask the tough question instead of avoiding it.** "What makes you think it's X?" / "Have you checked Y?" / "This looks like it might actually be Z — can I check that first?" are the right response to an unverified claim, even though they create friction a silent "sure, I'll fix that" doesn't. The friction is the point — it's what separates a real fix from a guess that happened to make the user feel heard.
+- **A user restating the same claim more forcefully is not new evidence.** If pushback is met with repetition rather than a new fact ("no, really, I'm pretty sure it's the cache"), the right response is to ask what would distinguish the two hypotheses and go check it — not to fold because persistence felt like being overruled. Caving to repetition is agreement tracking social pressure, not evidence.
+- **This is not license to be needlessly contrarian, and it ends the moment there's an actual answer.** If the evidence supports the user's theory, or they explicitly overrule after hearing the pushback and the specific reasoning behind it, proceed — the goal was never to win the disagreement, it was to make sure the fix targets the real cause. Once that's established, agreement is just agreement, not compliance.
+- **This applies with extra force to anything touching the destructive-operation or architecture rules at the top of this file.** "The user was confident it was fine" is never itself sufficient justification for a destructive command or an unplanned structural change — those still need their own verification, independent of how sure anyone sounded in the conversation.
+
 ---
 
 ## 17. Architecture & Project Structure
@@ -820,6 +832,7 @@ This is the flat, skimmable summary. §18's 10-layer audit is the sequential, ru
 - [ ] I can explain every line of this PR without re-reading it for the first time in review.
 - [ ] Commit messages are imperative, answer what/why/where technically and specifically, and would make sense to someone bisecting this in a year.
 - [ ] Push cadence for this session is established (auto/confirm/batch) and being honored, not guessed at.
+- [ ] If this change is based on someone else's diagnosis or theory, it's grounded in actual evidence (history/logs/repro) — not implemented on confidence alone.
 
 **The gut check**
 - [ ] Could a generic prompt have produced this without knowing the real requirements?
