@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UI Detail Registry</title>
+<style>
+  :root {
+    --ink: #1a1d23;
+    --ink-muted: #5a6270;
+    --border: #e2e5eb;
+    --surface: #ffffff;
+    --surface-alt: #f6f7f9;
+    --accent: #3454d1;
+    --accent-soft: #edf0fc;
+    --deprecated: #b3541e;
+    --deprecated-soft: #fdf1e9;
+    --radius: 6px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--ink);
+    background: var(--surface-alt);
+    line-height: 1.5;
+  }
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 20px 28px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  h1 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin: 0 0 4px;
+    letter-spacing: -0.01em;
+  }
+  .sync-note {
+    font-size: 0.8rem;
+    color: var(--ink-muted);
+    margin: 0 0 14px;
+  }
+  .sync-note code { background: var(--surface-alt); padding: 1px 5px; border-radius: 4px; }
+  #search {
+    width: 100%;
+    max-width: 420px;
+    padding: 9px 12px;
+    font-size: 0.9rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--ink);
+  }
+  #search:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+  main {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 24px 28px 60px;
+  }
+  .feature-group {
+    margin-bottom: 28px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .feature-group h2 {
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin: 0;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+  .feature-group h2 .letter {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-weight: 700;
+    color: var(--accent);
+    background: var(--accent-soft);
+    padding: 2px 8px;
+    border-radius: 5px;
+    font-size: 0.85rem;
+  }
+  .feature-group h2 .folder {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.78rem;
+    color: var(--ink-muted);
+    font-weight: 400;
+  }
+  table { width: 100%; border-collapse: collapse; }
+  th {
+    text-align: left;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--ink-muted);
+    padding: 10px 18px;
+    border-bottom: 1px solid var(--border);
+    font-weight: 600;
+  }
+  td {
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.86rem;
+    vertical-align: top;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr.is-hidden { display: none; }
+  tr.is-deprecated { opacity: 0.55; }
+  tr.is-deprecated td.id-cell::after {
+    content: "deprecated";
+    display: inline-block;
+    margin-left: 6px;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--deprecated);
+    background: var(--deprecated-soft);
+    padding: 1px 6px;
+    border-radius: 4px;
+    vertical-align: middle;
+  }
+  .id-cell {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-weight: 700;
+    color: var(--accent);
+    white-space: nowrap;
+    scroll-margin-top: 90px;
+  }
+  .id-cell:target, tr.is-target td { background: var(--accent-soft); }
+  .component-cell code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.82rem;
+    background: var(--surface-alt);
+    padding: 1px 5px;
+    border-radius: 4px;
+  }
+  .appears-cell { color: var(--ink); }
+  .notes-cell { color: var(--ink-muted); }
+  .notes-cell a, .appears-cell a {
+    color: var(--accent);
+    text-decoration: none;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-weight: 600;
+  }
+  .notes-cell a:hover, .appears-cell a:hover { text-decoration: underline; }
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--ink-muted);
+    font-size: 0.9rem;
+  }
+  .count-badge {
+    font-size: 0.78rem;
+    color: var(--ink-muted);
+    font-weight: 400;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>UI Detail Registry</h1>
+  <p class="sync-note">
+    Mirrors <code>UI-DETAIL.md</code> — same facts, two views. Update both files in the same commit.
+    Last synced: <code id="synced-at">(set this when you sync)</code>.
+    See <code>anti-ai-slop-design.md</code> §12.3.
+  </p>
+  <input id="search" type="search" placeholder="Search by ID, name, component, or condition&hellip;" aria-label="Search UI registry">
+</header>
+
+<main id="app"></main>
+
+<script>
+  // ---------------------------------------------------------------------
+  // SINGLE SOURCE OF DATA FOR THIS FILE. Mirror UI-DETAIL.md's tables
+  // exactly — same letters, same IDs, same "appears when" text. Update
+  // this array in the same commit as any change to UI-DETAIL.md; treat
+  // the two files as one fact set with two views, never one derived
+  // from the other by a build step.
+  //
+  // Fields:
+  //   letter, folder   — matches the "Letter map" table in the .md
+  //   id, name, component, appearsWhen, notes — matches a row in the
+  //     .md's per-feature table, in the same order
+  //   deprecated: true — for a row marked [deprecated] in the .md
+  //   relatedIds: ["a1"] — other IDs mentioned in notes/appearsWhen,
+  //     so they render as clickable jump links instead of plain text
+  // ---------------------------------------------------------------------
+  const DATA = {
+    syncedAt: "YYYY-MM-DD — set this whenever the arrays below change",
+    groups: [
+      // Example — replace with your project's real entries, or delete
+      // this group entirely once real ones exist.
+      {
+        letter: "a",
+        folder: "features/auth/",
+        rows: [
+          {
+            id: "a1",
+            name: "Login form",
+            component: "LoginForm.tsx",
+            appearsWhen: "Default view at /login for any unauthenticated visitor.",
+            notes: "",
+            relatedIds: []
+          },
+          {
+            id: "a2",
+            name: "Password reset modal",
+            component: "ResetModal.tsx",
+            appearsWhen: "User clicks \"Forgot password?\" on a1.",
+            notes: "Child of a1; cancel returns to a1.",
+            relatedIds: ["a1"]
+          }
+        ]
+      }
+    ]
+  };
+
+  function linkify(text, relatedIds) {
+    if (!relatedIds || relatedIds.length === 0) return escapeHtml(text);
+    let out = escapeHtml(text);
+    relatedIds.forEach(function (rid) {
+      const re = new RegExp("\\b" + rid + "\\b", "g");
+      out = out.replace(re, '<a href="#' + rid + '">' + rid + "</a>");
+    });
+    return out;
+  }
+
+  function escapeHtml(s) {
+    return String(s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+  }
+
+  function render() {
+    const app = document.getElementById("app");
+    document.getElementById("synced-at").textContent = DATA.syncedAt;
+
+    if (!DATA.groups.length) {
+      app.innerHTML = '<p class="empty-state">No entries yet. Add rows to the DATA object in this file (and to UI-DETAIL.md) as panels are built.</p>';
+      return;
+    }
+
+    app.innerHTML = DATA.groups.map(function (group) {
+      const rows = group.rows.map(function (row) {
+        const cls = ["ui-row"];
+        if (row.deprecated) cls.push("is-deprecated");
+        return (
+          '<tr class="' + cls.join(" ") + '" data-search="' +
+          escapeHtml((row.id + " " + row.name + " " + row.component + " " + row.appearsWhen + " " + row.notes).toLowerCase()) +
+          '">' +
+          '<td class="id-cell" id="' + row.id + '">' + escapeHtml(row.id) + "</td>" +
+          "<td>" + escapeHtml(row.name) + "</td>" +
+          '<td class="component-cell"><code>' + escapeHtml(row.component) + "</code></td>" +
+          '<td class="appears-cell">' + linkify(row.appearsWhen, row.relatedIds) + "</td>" +
+          '<td class="notes-cell">' + linkify(row.notes, row.relatedIds) + "</td>" +
+          "</tr>"
+        );
+      }).join("");
+
+      return (
+        '<section class="feature-group">' +
+        "<h2><span class=\"letter\">" + escapeHtml(group.letter) + '</span> ' + escapeHtml(group.folder) +
+        ' <span class="count-badge">(' + group.rows.length + ")</span></h2>" +
+        "<table>" +
+        "<thead><tr><th>ID</th><th>Name</th><th>Component</th><th>Appears when</th><th>Notes</th></tr></thead>" +
+        "<tbody>" + rows + "</tbody>" +
+        "</table>" +
+        "</section>"
+      );
+    }).join("");
+
+    // Jump to a specific ID via ?id=b5 or a #b5 hash, and highlight it.
+    const hash = window.location.hash.replace("#", "");
+    if (hash) {
+      const target = document.getElementById(hash);
+      if (target) {
+        const row = target.closest("tr");
+        if (row) row.classList.add("is-target");
+        if (typeof target.scrollIntoView === "function") {
+          try {
+            target.scrollIntoView({ block: "center" });
+          } catch (e) {
+            /* scrollIntoView is best-effort — the highlight above is what actually matters */
+          }
+        }
+      }
+    }
+  }
+
+  document.getElementById("search").addEventListener("input", function (e) {
+    const q = e.target.value.trim().toLowerCase();
+    document.querySelectorAll("tr.ui-row").forEach(function (row) {
+      const hay = row.getAttribute("data-search") || "";
+      row.classList.toggle("is-hidden", q.length > 0 && !hay.includes(q));
+    });
+  });
+
+  render();
+</script>
+
+</body>
+</html>

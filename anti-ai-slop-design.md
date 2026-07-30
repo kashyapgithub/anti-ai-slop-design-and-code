@@ -515,6 +515,13 @@ Once a product has more than a handful of screens, "the modal that shows up when
 - **When starting a new project or feature, create the letter entry before building the first screen in it** — this is the same "write it down before you write the code" instinct as the top-priority rules in both guides' "Read This First," applied to UI structure specifically.
 - **If a person says "go to b5 and change this," that reference is now unambiguous and directly actionable** — look it up, find the component and its exact trigger condition, and you already know what it is and why it's on screen before opening a single file.
 
+**If this is a web app: also maintain `UI-DETAIL.html`, a visual, browsable mirror of the same facts.** `templates/UI-DETAIL.html` in this repo is a single, self-contained, dependency-free file — the same rows as `UI-DETAIL.md`, embedded as inline data so it opens and works straight from `file://` with no server, no build step, and no fetch/CORS to worry about. It gives a searchable, clickable view where an ID like **b5** is a real jump link, not just table text.
+
+- **The two files describe one fact set, not two.** Update the embedded data array in `UI-DETAIL.html` in the same commit as any change to `UI-DETAIL.md` — same letters, same IDs, same "appears when" text, same notes. Treat drift between them as a bug, the same way a stale comment is a bug (§9).
+- **Skip this file entirely for a project that isn't a web app** — a CLI tool or a backend service has no browsable UI to register, and adding an HTML viewer nobody will open is the documentation equivalent of the five-layer-abstraction slop tell (§2): ceremony standing in for judgment. Per §17.2's Rule of Three, don't earn this complexity before there's a UI to justify it.
+- **Auto-open the viewer after any prompt whose work touched the registry — as a new tab, never replacing whatever the person already has open.** The detection is simple and doesn't need to guess at file extensions: if `UI-DETAIL.md` has uncommitted changes at the end of a turn, that turn did UI work, since the discipline above already requires updating it whenever a panel changes. `templates/claude-code-settings.json`'s `Stop` hook in this repo does exactly this — checks `git status --porcelain -- UI-DETAIL.md`, and if it's dirty, opens `UI-DETAIL.html` via the OS's own opener (`open` on macOS, `xdg-open` on Linux) in the background, without blocking or replacing the turn's actual work.
+- **Be honest about what "just open it" can and can't guarantee.** No shell command can promise a new tab opens with zero visual disruption — that's browser/OS behavior outside a script's control, and most openers will briefly focus the new tab. What's actually guaranteed, and what the request is really asking for, is that it opens as an *additional* tab and never navigates away from or replaces the person's existing one. Don't oversell this as silent or invisible; it isn't.
+
 ---
 
 ## 13. The Anti-Slop Review Checklist
@@ -523,7 +530,7 @@ Once a product has more than a handful of screens, "the modal that shows up when
 - [ ] I can state the screen's job in one sentence.
 - [ ] There is a clear first / second / third reading order.
 - [ ] There is exactly one focal point and one primary action per view.
-- [ ] This screen/panel has a `UI-DETAIL.md` entry with a stable ID and a precise, checkable "appears when" condition.
+- [ ] This screen/panel has a `UI-DETAIL.md` entry with a stable ID and a precise, checkable "appears when" condition; if `UI-DETAIL.html` exists, its embedded data matches.
 
 **Typography**
 - [ ] A real modular scale with distinct steps.

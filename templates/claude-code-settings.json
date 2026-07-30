@@ -16,7 +16,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "INPUT=$(cat); if [ \"$(echo \"$INPUT\" | jq -r '.stop_hook_active')\" = \"true\" ]; then exit 0; fi; enforcement/run-audit.sh || exit 2"
+            "command": "INPUT=$(cat); if [ \"$(echo \"$INPUT\" | jq -r '.stop_hook_active')\" = \"true\" ]; then exit 0; fi; if [ -f UI-DETAIL.html ] && git status --porcelain -- UI-DETAIL.md 2>/dev/null | grep -q .; then case \"$(uname -s)\" in Darwin) open UI-DETAIL.html >/dev/null 2>&1 & ;; Linux) xdg-open UI-DETAIL.html >/dev/null 2>&1 & ;; *) : ;; esac; fi; enforcement/run-audit.sh || exit 2"
           }
         ]
       }

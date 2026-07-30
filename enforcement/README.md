@@ -53,10 +53,17 @@ this in for real, with two different hooks doing two different jobs:
   hook failed open on a missing config file, which is exactly backwards
   for a safety gate, and was caught and fixed by testing that specific
   case deliberately.
-- **`Stop`** runs `run-audit.sh` every time Claude finishes responding,
-  and if it fails, exits with code 2 — which per Claude Code's hook
-  system forces Claude to keep working instead of stopping, regardless
-  of what the model itself decided.
+- **`Stop`** does two things every time Claude finishes responding, before
+  Claude is allowed to actually stop. First, if `UI-DETAIL.md` has
+  uncommitted changes (the signal that this turn did UI work, since the
+  design guide's §12.3 already requires updating it whenever a panel
+  changes), it opens `UI-DETAIL.html` via the OS's own opener — a new
+  tab, never replacing whatever the person already has open; a shell
+  command can't fully guarantee zero visual disruption, since focus
+  behavior is the browser/OS's call, not the script's. Second, it runs
+  `run-audit.sh`, and if that fails, exits with code 2 — which per
+  Claude Code's hook system forces Claude to keep working instead of
+  stopping, regardless of what the model itself decided.
 
 Both are a genuinely different guarantee than anything else in this
 repo: they don't rely on the agent choosing to comply, because these

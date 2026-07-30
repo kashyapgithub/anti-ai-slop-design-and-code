@@ -28,6 +28,32 @@ it's still current rather than trusting the date above blindly.
   properly as the sixth standing rule and re-synced `templates/AGENTS.md`
   against it.
 
+## 2026-07-27 (final for now) — UI-DETAIL.html viewer, and auto-opening it after UI work
+
+- Added `templates/UI-DETAIL.html`: a self-contained, dependency-free
+  viewer for web-app projects — the same rows as `UI-DETAIL.md`,
+  embedded inline so it works via plain `file://` with no server, no
+  build step, no fetch/CORS. Searchable, with clickable cross-reference
+  links between IDs (e.g. "child of a1" jumps to a1). Tested with a real
+  DOM (jsdom): rendering, search-filtering, hash-based jump/highlight,
+  the empty state, and deprecated-row styling all verified. Found and
+  fixed one real bug in the process — an unguarded `scrollIntoView` call
+  threw and silently skipped the highlight logic; reordered so the
+  highlight always applies and the scroll is best-effort.
+- Extended the `Stop` hook in `templates/claude-code-settings.json` to
+  auto-open `UI-DETAIL.html` (as a new tab, never replacing what's
+  open) whenever a turn leaves `UI-DETAIL.md` with uncommitted changes
+  — reuses the existing "update the registry when you touch UI"
+  discipline as the detection signal instead of guessing at file
+  extensions. Tested end-to-end with mocked `open`/`xdg-open` across
+  three scenarios (no UI work, UI work this turn, hook-loop-guard).
+  Documented honestly that no shell command can guarantee zero visual
+  disruption — the real guarantee is "additional tab, never a
+  replacement," not "silent."
+- Ran the same header/cross-reference validation immediately after this
+  edit, as after the previous two changes — clean this time, no repeat
+  of the header-deletion mistake from the last two additions.
+
 ## 2026-07-27 (yet even later) — UI-DETAIL.md: a stable-ID registry for every panel
 
 - Added §12.3 to the design guide: maintain a `UI-DETAIL.md` registry

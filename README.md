@@ -24,7 +24,7 @@ Scripts that back the guide's rules with an actual gate instead of just prose: `
 
 ## `templates/`
 
-Drop-in `AGENTS.md` / `CLAUDE.md` (plus `opencode.json` / `kilo.jsonc` / `UI-DETAIL.md`) that make an agent load the guide's non-negotiable rules automatically at session start, instead of relying on someone pasting them into chat. Covers Claude Code, opencode, Kilo Code, Google Antigravity IDE, Cursor, Copilot, Windsurf, and the rest of the tools converging on the `AGENTS.md` standard. See [`templates/README.md`](./templates/README.md).
+Drop-in `AGENTS.md` / `CLAUDE.md` (plus `opencode.json` / `kilo.jsonc` / `UI-DETAIL.md` + `UI-DETAIL.html`) that make an agent load the guide's non-negotiable rules automatically at session start, instead of relying on someone pasting them into chat. Covers Claude Code, opencode, Kilo Code, Google Antigravity IDE, Cursor, Copilot, Windsurf, and the rest of the tools converging on the `AGENTS.md` standard. See [`templates/README.md`](./templates/README.md).
 
 ## Status
 
