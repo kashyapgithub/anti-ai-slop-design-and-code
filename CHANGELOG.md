@@ -28,6 +28,22 @@ it's still current rather than trusting the date above blindly.
   properly as the sixth standing rule and re-synced `templates/AGENTS.md`
   against it.
 
+## 2026-07-27 (even later) — Ask about push workflow; commit messages must answer what/why/where
+
+- Added §15.6: establish how the person wants pushes handled (auto-push,
+  hold for confirmation, or batch-and-confirm) early in a session, by
+  asking rather than guessing, and honor it for the rest of the session.
+  Explicitly separated this from the never-destroy-data rule — a push
+  preference is set once; destructive-operation confirmation is required
+  every single time regardless of any push preference already agreed on.
+- Strengthened §15.1: every commit message must now answer three
+  questions explicitly and technically — what changed (named precisely),
+  why (the actual problem, not "fixed bug"), and where it applies (the
+  scope, and what it deliberately doesn't touch). Updated the structure
+  template and checklist to match.
+- Both added as new standing rules (now seven total) in "Read This
+  First," mirrored into `templates/AGENTS.md`.
+
 ## 2026-07-27 (later still) — Icon vs. emoji: clarifying what's actually banned
 
 - Refined the no-emoji-in-UI rule to make clear it's not a rule against

@@ -34,13 +34,14 @@ Before you write or generate a single line for a task, do this, in order:
 
 **A second rule with the same priority as architecture: never call a task finished on unit tests alone.** If the change touches more than one component — a network call, a database write, a queue, another module — write an integration test that exercises the real boundary, not just unit tests against a mocked version of it. See §14.1. This is the other place agents most reliably produce work that looks complete and isn't: every unit test green, and the actual seam between two pieces never once verified to work.
 
-**Six more standing rules, no exceptions:**
-- **Never commit with a message that doesn't explain *why*.** "fix stuff," "update files," or an unexplained restatement of the diff are not acceptable commit messages from an agent — see §15.1 for the full structure. If you generated the diff, you're the one person guaranteed to know why it was needed right now; write that down before it's lost.
+**Seven more standing rules, no exceptions:**
+- **Never commit with a message that doesn't explain *why*.** "fix stuff," "update files," or an unexplained restatement of the diff are not acceptable commit messages from an agent — see §15.1 for the full structure. Every commit message answers what, why, and where, technically and specifically — not just what the diff already shows.
 - **Never write a comment you haven't checked against the code it sits next to.** A comment that's wrong is worse than no comment, because the next reader — human or agent — trusts it by default. See §9.1 for what makes a comment clarify instead of confuse.
 - **Log through one centralized logger, generously, not scattered `console.log`/`print`.** Every significant function or step traces its entry, exit, and branch taken at `debug` level, correlated by an ID threaded through the whole operation — enough that any flow can be reconstructed from logs alone after the fact, without re-running the code. See §7.2 and §7.3.
 - **When a user reports "something broke" or "this used to work," check the last 5 commits before doing anything else.** `git log -5 --oneline` and `git diff HEAD~5 HEAD --stat` first — not a broad re-read of the codebase, not five clarifying questions. Recent history is the highest-prior signal for a regression, because "used to work" means a working state existed and something changed since; that change is very likely in the last few commits. See §15.2 for the full triage sequence.
 - **Before every nontrivial change, not just after a complaint, check the last 3 commits for the area you're touching.** `git log -3 --oneline` and `git diff HEAD~3 HEAD --stat` — check for duplication, contradiction, and stale assumptions before you start, and again after you finish. See §15.4.
 - **After two failed attempts at the same reported issue, stop guessing from memory and actually research it before a third try.** Search the exact error text, check current docs and the changelog for the version in use, check the issue tracker — training data has a cutoff and is frequently not enough, especially for library behavior that's changed since. A third confident guess with no new information is the same failure as the first two. See §15.5.
+- **Establish how the person wants pushes handled, early, and honor it — don't guess a workflow.** Auto-push, hold for confirmation, or batch-and-confirm are all valid; which one is a preference to ask about, not infer. This is a workflow setting, separate from and never a substitute for the destructive-operation confirmation at the very top of this file. See §15.6.
 
 ### On a brand-new project: write the architecture down before you write any code
 
@@ -486,14 +487,22 @@ This is one of the most common places AI-assisted code quietly fails, because it
 
 A commit message is documentation for the person debugging this line six months from now — often you. Slop commit messages are the git equivalent of narration comments: present, technically true, and useless.
 
+**Every commit message answers three questions, technically and specifically — what, why, and where:**
+- **What** actually changed, named precisely: the function, endpoint, config key, or behavior — not "updated logic" or "fixed bug." "Reject expired refresh tokens on rotation" is a *what*; "fix auth stuff" is not.
+- **Why** it changed: the actual problem, bug, or requirement that made this necessary, in concrete technical terms — the mechanism that was wrong, not just that something "wasn't working." `git diff` already shows *what*; the message's entire job is carrying *why*, since that's the one thing version control doesn't capture on its own.
+- **Where** it applies: the scope — which module, service, boundary, or environment this touches, and (when relevant) what it explicitly does *not* touch. "Where" is what tells a reviewer or a future bisect whether this commit is even a plausible suspect for a given symptom, without them having to open the diff to find out.
+
+A commit message missing any one of these three isn't incomplete documentation — it's documentation of one axis while silently omitting the other two, and the axis it usually keeps (*what*, restated from the diff) is the one `git log -p` already gives you for free.
+
 **Structure (works for Conventional Commits or plain prose):**
 ```
 <type>(<scope>): <imperative summary, ≤50 chars, no trailing period>
 
 <body: why this change, not what — the diff already shows what>
 <wrap at ~72 chars, explain the problem this solves, tradeoffs
-considered, and anything a reviewer needs to understand the
-change without re-deriving it>
+considered, where it applies (module/service/environment) and
+what it deliberately doesn't touch, and anything a reviewer needs
+to understand the change without re-deriving it>
 
 <footer: closes #123, refs #456, BREAKING CHANGE: ..., Co-authored-by: ...>
 ```
@@ -580,6 +589,15 @@ Training data has a cutoff and is unavoidably incomplete — library APIs change
 - **Check the library's issue tracker for the specific version.** A bug that's already reported, already fixed in a later release, or explicitly called a known limitation is a different situation — and a different fix — than blind trial and error against a problem nobody's written down yet.
 - **Read enough of what you find to understand *why* the first two attempts failed**, not just to copy a third guess. The goal is closing the actual gap in what you know, not increasing the sample size of attempts.
 - **This isn't "give up and hand it back to the user" — it's the alternative to that.** Two failed attempts followed by a third confident guess trains the person to expect to re-explain the same problem repeatedly; two failed attempts followed by "let me check the current docs/issue tracker for this" is what actually closes the gap training data can't.
+
+### 15.6 Ask how the person wants pushes handled — don't assume a workflow
+
+Git push cadence is a working-style preference, not a technical fact derivable from the codebase, and guessing wrong in either direction has a real cost: push after every commit without asking and a shared remote fills up with commits nobody expected to see yet; wait for explicit approval every single time when the person just wants it to happen and every push becomes friction they have to actively opt into repeatedly.
+
+- **Establish this explicitly, early — at the start of a session working in a git repo, or the first time a push becomes relevant** — rather than inferring it from the codebase or defaulting to whichever seems most efficient. A short, concrete question with real options settles it: push automatically after every commit, hold and ask before each push, or batch several commits and confirm at natural checkpoints.
+- **Once set, honor it for the rest of the session.** Don't silently revert to asking every time after being told to push automatically, and don't silently start auto-pushing after being told to wait for confirmation. Re-establish it only when the situation genuinely changes — a new repo, a remote that hasn't been pushed to before, or a branch switch that changes who'd see the pushed commits.
+- **This is a workflow preference, not a safety gate, and the two are not interchangeable.** A push-cadence preference can be set once and honored for a session. The never-destroy-data rule at the very top of this file is the opposite — it requires confirmation for that specific destructive operation every time, regardless of any general preference already established. Knowing someone wants auto-push doesn't extend to auto-approving a force-push or a `git reset --hard`; those still fall under §"never destroy data," not under whatever push cadence was agreed on here.
+- **When genuinely unestablished and a push is imminent, ask rather than guess** — this is the same "ask rather than guess" standard the rest of this guide applies to architecture (§17.4) and destructive operations, applied here to workflow instead of correctness.
 
 ---
 
@@ -800,7 +818,8 @@ This is the flat, skimmable summary. §18's 10-layer audit is the sequential, ru
 - [ ] Comments explain *why* and are true; public APIs documented (with units).
 - [ ] No comment is stale, ambiguous about what "it" refers to, or detached from the line it describes.
 - [ ] I can explain every line of this PR without re-reading it for the first time in review.
-- [ ] Commit messages are imperative, explain *why*, and would make sense to someone bisecting this in a year.
+- [ ] Commit messages are imperative, answer what/why/where technically and specifically, and would make sense to someone bisecting this in a year.
+- [ ] Push cadence for this session is established (auto/confirm/batch) and being honored, not guessed at.
 
 **The gut check**
 - [ ] Could a generic prompt have produced this without knowing the real requirements?

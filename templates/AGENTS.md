@@ -70,11 +70,14 @@ integration test exercising the real boundary — not just unit tests
 against a mocked version of it. Mocking everything is exactly how a
 green test suite hides a broken connection between two pieces of code.
 
-**Every commit message explains why, not just what.** `git diff` already
-shows what changed. "fix stuff" / "update files" / an unexplained
-restatement of the diff are not acceptable. If you generated the change,
-you're the one guaranteed to know why it was needed right now — write
-that down before it's lost.
+**Every commit message answers what, why, and where — technically and
+specifically.** What actually changed (the function/endpoint/behavior,
+named precisely), why it was necessary (the actual problem, not "fixed
+bug"), and where it applies (the module/service/scope, and what it
+deliberately doesn't touch). "fix stuff" / "update files" / a restatement
+of the diff answers none of these. `git diff` already shows what
+changed — the message's job is carrying why and where, which nothing
+else captures.
 
 **Every comment is checked against the code next to it before it ships.**
 A stale or ambiguous comment is worse than none, because the next reader
@@ -106,6 +109,14 @@ in use, check the issue tracker — training data has a cutoff and is
 frequently not enough, especially for library behavior that's changed
 since. A third confident guess with no new information is the same
 failure as the first two.
+
+**Establish how the person wants pushes handled, early in the session,
+and honor it — don't guess.** Ask once: auto-push after every commit,
+hold for confirmation before each push, or batch and confirm at natural
+checkpoints. Once set, honor it for the rest of the session rather than
+re-asking or silently reverting. This is a workflow preference, separate
+from — and never a substitute for — the destructive-operation
+confirmation required every time under "never destroy data" above.
 
 ## Before you report a task as done
 
