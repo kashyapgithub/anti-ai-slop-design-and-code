@@ -4,6 +4,9 @@ Two field guides — plus the tooling to actually enforce them — for producing
 
 This isn't just documentation. It's a working system: guides an agent reads automatically, rules backed by CI gates and git hooks that don't depend on the agent choosing to comply, and a couple of small tools (a UI registry, an audit runner) that make the rules practical to actually follow.
 
+> ### Featured: `UI-DETAIL.md` / `UI-DETAIL.html` — a stable-ID registry for every screen and panel
+> Every screen, panel, or modal gets a short, permanent ID — `a3`, `b5`, `n6` — where the letter maps directly onto the project's feature-folder structure and the number never gets reassigned. Each entry records the *exact*, checkable condition under which it appears — not "shows up sometimes," a real boolean. **"Go to b5 and change this" becomes a directly actionable instruction**, instead of a description that has to be re-located in the codebase first. For web apps, `UI-DETAIL.html` is a self-contained, dependency-free, searchable viewer of the same data — no server, no build step — that auto-opens (as a new tab, never replacing what's already open) whenever an agent's turn touches the registry. See `anti-ai-slop-design.md` §12.3 and [`templates/UI-DETAIL.md`](./templates/UI-DETAIL.md) / [`templates/UI-DETAIL.html`](./templates/UI-DETAIL.html).
+
 ---
 
 ## What's in this repo
@@ -44,7 +47,7 @@ Same structure, its own top rule: **never use emoji in any UI** — not as icons
 
 Covers: 32 diagnostic "slop tells" (the original 20 plus two later rounds grounded in real data — a large-scale study ranking which visual tells people actually cite, where plain gradient defaults and unmodified shadcn/Tailwind styling rank above bento grids and glassmorphism), typography, color, layout, components and interaction states, content/microcopy, motion, accessibility (including why **overlay widgets** are the accessibility version of slop), design tokens, internationalization, process (constraining a model before prompting it, committing design changes with real rationale), and a full review checklist.
 
-**The `UI-DETAIL.md` / `UI-DETAIL.html` registry system** — every screen, panel, or modal gets a stable ID (`a3`, `b5`, `n6`), where the letter maps directly onto the code guide's feature-folder structure and the number is permanent once assigned. Each entry records the *exact* condition under which it appears — not "shows up sometimes," but a real, checkable boolean. "Go to b5 and change this" becomes a directly actionable instruction instead of a description that has to be re-located in the codebase.
+**The `UI-DETAIL.md` / `UI-DETAIL.html` registry system** (see the callout at the top of this README) also lives here — every panel gets a stable, permanent ID mapped onto the feature-folder structure.
 
 ---
 
