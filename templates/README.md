@@ -40,23 +40,27 @@ Everything above makes the rules *present*; it doesn't make them *forced* — an
    directly at this repo's raw GitHub URLs, so those two tools pull the
    full, current guides at the start of every session automatically —
    no manual sync step needed for them specifically.
-4. For everything else (Antigravity, Cursor, Copilot, Windsurf, Claude
+4. **If the project has a UI**, copy `UI-DETAIL.md` to the project root
+   and start filling in the letter map as you build features — see
+   `anti-ai-slop-design.md` §12.3. The letters should match the feature
+   folders from the code guide's §17.1 directly.
+5. For everything else (Antigravity, Cursor, Copilot, Windsurf, Claude
    Code, and any tool without remote-URL support), pull the full guides
    into `docs/anti-ai-slop/` per the sync instructions inside each guide,
    so an agent that does read further finds the full reasoning, not just
    the condensed rules in `AGENTS.md`.
-5. **If you run both Antigravity IDE and Gemini CLI on the same machine**,
+6. **If you run both Antigravity IDE and Gemini CLI on the same machine**,
    note they currently share the same global config path
    (`~/.gemini/GEMINI.md`), which can leak rules between the two tools.
    Put shared rules in `~/.gemini/AGENTS.md` instead (Gemini CLI ignores
    it, Antigravity reads it) and keep `GEMINI.md` for Antigravity-only
    overrides.
-6. If you're on Cursor specifically, you can additionally set the
+7. If you're on Cursor specifically, you can additionally set the
    equivalent rule file to "always apply" (rather than glob- or
    agent-requested-scoped) so it's injected on every single turn, not
    just read once at session start — stronger than a file the agent
    merely *can* read.
-7. For a tool-agnostic fallback that works no matter which agent (or
+8. For a tool-agnostic fallback that works no matter which agent (or
    human) is committing, copy `pre-commit` into `.git/hooks/pre-commit`
    and `chmod +x` it — git itself will refuse a commit that fails the
    audit, regardless of what wrote the change.

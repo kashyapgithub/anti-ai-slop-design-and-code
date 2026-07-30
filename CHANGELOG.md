@@ -28,6 +28,27 @@ it's still current rather than trusting the date above blindly.
   properly as the sixth standing rule and re-synced `templates/AGENTS.md`
   against it.
 
+## 2026-07-27 (yet even later) — UI-DETAIL.md: a stable-ID registry for every panel
+
+- Added §12.3 to the design guide: maintain a `UI-DETAIL.md` registry
+  giving every screen/panel/modal a stable ID (`a3`, `b5`, `n6`) so "go
+  to b5 and change this" is directly actionable instead of a description
+  that has to be re-located in the codebase. The ID scheme isn't
+  arbitrary — the letter matches the feature-folder structure from the
+  code guide's §17.1 directly, so the registry is a map onto a decision
+  that already exists, not a second taxonomy to maintain by hand.
+- Documents, for every entry, the exact "appears when" condition (a
+  precise, checkable boolean, not vague prose) — the why behind each
+  panel showing up, not just what it is.
+- Added `templates/UI-DETAIL.md` as a ready-to-copy starter file, wired
+  into the bootstrapping instructions in "Read This First" (create it
+  alongside `DESIGN.md`, before the first panel exists) and into
+  `templates/README.md`'s adoption steps.
+- Caught and fixed the same header-deletion mistake as the previous
+  entry, a second time, in a different file — an earlier edit in this
+  same change deleted "## 13. The Anti-Slop Review Checklist" entirely.
+  Found immediately by the same header-count validation, before commit.
+
 ## 2026-07-27 (yet later) — Push back on unverified theories instead of caving to pressure
 
 - Added §16.1: agreement should track evidence, not social pressure. A

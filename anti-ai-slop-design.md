@@ -32,10 +32,11 @@ Before you generate the first component, page, or style for a task, do this, in 
    - **The layout principle** — the grid, spacing scale, and one sentence on the intended focal hierarchy (§3.1, §6.1).
    - **The tone of voice** for copy (§8) — plain, warm, terse, playful; pick one and hold it.
    - **The explicit bans** for this project, if defaults keep creeping back in: no centered-hero-as-default, no unearned glassmorphism, no icon set chosen by popularity alone, no gradient without a stated reason (§2.1).
-3. **Treat the first generation as a draft to push past, not a deliverable**, per §12.1 — generate, then edit the output against the written system rather than accepting whatever came out first.
-4. **Never introduce a new font, palette, spacing scale, or component pattern mid-task as an incidental side effect of building one screen.** If the existing system genuinely doesn't fit what you're building, surface that as an explicit decision for review, the same way an unplanned architectural change gets flagged in the code guide — don't silently drift the visual language screen by screen until nothing matches.
-5. **When genuinely uncertain about a visual direction with no precedent to follow, ask rather than guess.** A wrong typeface or palette choice gets built on top of by every subsequent screen before anyone notices it was never a real decision.
-6. **Keep the system document itself proportional.** One `DESIGN.md` is enough for a new project — a short, load-bearing reference, not a fifteen-section brand book nobody will read. Split it further only once it's genuinely outgrown a single file — the same Rule of Three logic the code guide applies to extracting a function or a second architecture document, applied here to documentation.
+3. **Start a `UI-DETAIL.md` alongside it, before the first panel exists** — one row per screen/panel/modal as you build each, with a stable ID and its exact appears-when condition. See §12.3. An empty registry with just the letter map is enough on day one; it fills in as the product does.
+4. **Treat the first generation as a draft to push past, not a deliverable**, per §12.1 — generate, then edit the output against the written system rather than accepting whatever came out first.
+5. **Never introduce a new font, palette, spacing scale, or component pattern mid-task as an incidental side effect of building one screen.** If the existing system genuinely doesn't fit what you're building, surface that as an explicit decision for review, the same way an unplanned architectural change gets flagged in the code guide — don't silently drift the visual language screen by screen until nothing matches.
+6. **When genuinely uncertain about a visual direction with no precedent to follow, ask rather than guess.** A wrong typeface or palette choice gets built on top of by every subsequent screen before anyone notices it was never a real decision.
+7. **Keep the system documents themselves proportional.** One `DESIGN.md` and one `UI-DETAIL.md` are enough for a new project — short, load-bearing references, not a fifteen-section brand book nobody will read. Split further only once genuinely outgrown a single file — the same Rule of Three logic the code guide applies to extracting a function or a second architecture document, applied here to documentation.
 
 This is not a style preference among many. Get the visual system decided and written down, and every rule that follows in this guide is easy to apply consistently. Skip it, and no amount of individually correct typography or color choices saves the product from reading like a different app on every screen.
 
@@ -478,6 +479,42 @@ Refs #219 (a11y audit)
 
 This is the same imperative-mood, why-not-what structure covered for code in [§15.1](#151-writing-a-commit-message-worth-reading-later) of the code guide — design changes just need one more thing in the body: the visual or perceptual reason the pixels moved.
 
+### 12.3 Maintain a `UI-DETAIL.md` registry — give every panel a stable, lookup-friendly ID
+
+Once a product has more than a handful of screens, "the modal that shows up when you try to delete something" stops being a precise enough reference for either a person or an agent to act on quickly. The fix is a living registry, maintained alongside the code, where every meaningful UI element — page, panel, modal, drawer, toast, banner — gets a short, stable ID. The point isn't documentation for its own sake; it's that "go fix b5" becomes an instruction an agent can act on directly, instead of a description it has to re-locate in the codebase every time.
+
+**The ID scheme is not arbitrary — it's the feature-folder structure from the code guide's §17.1, made referenceable.** Assign one letter per top-level feature (matching the actual `features/<name>/` folder it lives in — `a` for `auth`, `b` for `billing`, `n` for navigation/shell, and so on), and a sequential number within that letter for each UI element in that feature, in the order it was added. This means the registry is never a second, competing taxonomy to keep in sync by hand — the letter groups fall directly out of a decision that's already been made and already has to be kept accurate anyway.
+
+```markdown
+# UI-DETAIL.md
+
+## Letter map
+| Letter | Feature folder |
+|---|---|
+| a | features/auth/ |
+| b | features/billing/ |
+| n | features/nav/ (shell, sidebar, top bar) |
+
+## a — Auth
+| ID | Name | Component | Appears when | Notes |
+|----|------|-----------|--------------|-------|
+| a1 | Login form | `LoginForm.tsx` | Default view at `/login` for any unauthenticated visitor. | |
+| a2 | Password reset modal | `ResetModal.tsx` | User clicks "Forgot password?" on **a1**. | Child of a1; cancel returns to a1. |
+| a3 | MFA challenge screen | `MfaChallenge.tsx` | **a1** submits valid credentials AND `user.mfaEnabled === true`. | Replaces a1 in the same route; success redirects to dashboard. |
+
+## b — Billing
+| ID | Name | Component | Appears when | Notes |
+|----|------|-----------|--------------|-------|
+| b5 | Downgrade confirmation | `DowngradeConfirm.tsx` | User selects a lower plan on the billing page AND `subscription.status === 'active'`. | Blocks downgrade if `usage.seats > newPlan.seatLimit`; shows **b6** instead in that case. |
+```
+
+- **The "Appears when" column is the entire point — make it a precise, checkable condition, not vague prose.** "Shows up sometimes when editing" is not an entry; "`isEditing === true` AND `draft.hasUnsavedChanges`" is. If the condition is too long for the table, add a footnote below it rather than leaving the cell vague.
+- **Cross-reference by ID, not by description**, once an ID exists — "replaces **a1**," "blocks **b5**," "child of **n2**" — so the relationships between panels are navigable the same way the panels themselves are.
+- **Assign the next ID sequentially within its letter, in the order the element was actually added** — don't renumber existing IDs to "keep things tidy" later; a stable ID that never changes is the entire value of having one. If an element is removed, mark its row `[deprecated]` rather than deleting it and reusing the number.
+- **Update this file in the same commit that adds or changes the UI element it describes** — the same rule as `ARCHITECTURE.md` in the code guide: a stale registry actively misleads the next lookup, which is worse than no registry at all (§9's stale-comment principle, applied to documentation).
+- **When starting a new project or feature, create the letter entry before building the first screen in it** — this is the same "write it down before you write the code" instinct as the top-priority rules in both guides' "Read This First," applied to UI structure specifically.
+- **If a person says "go to b5 and change this," that reference is now unambiguous and directly actionable** — look it up, find the component and its exact trigger condition, and you already know what it is and why it's on screen before opening a single file.
+
 ---
 
 ## 13. The Anti-Slop Review Checklist
@@ -486,6 +523,7 @@ This is the same imperative-mood, why-not-what structure covered for code in [§
 - [ ] I can state the screen's job in one sentence.
 - [ ] There is a clear first / second / third reading order.
 - [ ] There is exactly one focal point and one primary action per view.
+- [ ] This screen/panel has a `UI-DETAIL.md` entry with a stable ID and a precise, checkable "appears when" condition.
 
 **Typography**
 - [ ] A real modular scale with distinct steps.
