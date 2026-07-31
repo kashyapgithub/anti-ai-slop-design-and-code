@@ -137,6 +137,30 @@
     scroll-margin-top: 90px;
   }
   .id-cell:target, tr.is-target td { background: var(--accent-soft); }
+  tr.sub-row { background: var(--surface-alt); }
+  tr.sub-row td { font-size: 0.82rem; }
+  .sub-id-cell {
+    padding-left: 32px;
+    position: relative;
+    color: var(--ink-muted);
+    font-weight: 600;
+  }
+  .sub-id-cell::before {
+    content: "\21B3";
+    position: absolute;
+    left: 16px;
+    color: var(--border);
+  }
+  .type-badge {
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--ink-muted);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 1px 7px;
+    border-radius: 4px;
+  }
   .component-cell code {
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
     font-size: 0.82rem;
@@ -211,7 +235,25 @@
             component: "LoginForm.tsx",
             appearsWhen: "Default view at /login for any unauthenticated visitor.",
             notes: "",
-            relatedIds: []
+            relatedIds: [],
+            children: [
+              {
+                id: "a1.a",
+                element: "\"Sign in\" button",
+                type: "button",
+                action: "Submits the form; on success redirects to dashboard.",
+                notes: "Disabled while submitting.",
+                relatedIds: []
+              },
+              {
+                id: "a1.b",
+                element: "\"Forgot password?\" link",
+                type: "link",
+                action: "Opens a2.",
+                notes: "",
+                relatedIds: ["a2"]
+              }
+            ]
           },
           {
             id: "a2",
@@ -222,15 +264,59 @@
             relatedIds: ["a1"]
           }
         ]
+      },
+      {
+        letter: "b",
+        folder: "features/billing/",
+        rows: [
+          {
+            id: "b5",
+            name: "Downgrade confirmation",
+            component: "DowngradeConfirm.tsx",
+            appearsWhen: "User selects a lower plan on the billing page AND subscription.status === 'active'.",
+            notes: "Blocks downgrade if usage.seats > newPlan.seatLimit; shows b6 instead in that case.",
+            relatedIds: [],
+            children: [
+              {
+                id: "b5.a",
+                element: "\"Cancel\" button",
+                type: "button",
+                action: "Closes the modal, returns to the billing page. No request sent.",
+                notes: "",
+                relatedIds: []
+              },
+              {
+                id: "b5.b",
+                element: "\"Confirm downgrade\" button",
+                type: "button",
+                action: "Calls PATCH /subscription with the new plan. On success, closes and refreshes the billing page.",
+                notes: "Disabled while isSubmitting; see b5.c for the state that gates it.",
+                relatedIds: ["b5.c"]
+              },
+              {
+                id: "b5.c",
+                element: "Seat-count warning banner",
+                type: "banner",
+                action: "\u2014",
+                notes: "Only rendered when usage.seats > newPlan.seatLimit; its presence is what disables b5.b.",
+                relatedIds: ["b5.b"]
+              }
+            ]
+          }
+        ]
       }
     ]
   };
+
+  function escapeRegex(s) {
+    return String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  }
 
   function linkify(text, relatedIds) {
     if (!relatedIds || relatedIds.length === 0) return escapeHtml(text);
     let out = escapeHtml(text);
     relatedIds.forEach(function (rid) {
-      const re = new RegExp("\\b" + rid + "\\b", "g");
+      const re = new RegExp("\\b" + escapeRegex(rid) + "\\b", "g");
       out = out.replace(re, '<a href="#' + rid + '">' + rid + "</a>");
     });
     return out;
@@ -241,6 +327,20 @@
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;");
+  }
+
+  function childRowHtml(child, parentId) {
+    return (
+      '<tr class="ui-row sub-row" data-parent="' + escapeHtml(parentId) + '" data-search="' +
+      escapeHtml((child.id + " " + child.element + " " + child.type + " " + child.action + " " + (child.notes || "")).toLowerCase()) +
+      '">' +
+      '<td class="id-cell sub-id-cell" id="' + escapeHtml(child.id) + '">' + escapeHtml(child.id) + "</td>" +
+      "<td>" + escapeHtml(child.element) + "</td>" +
+      '<td class="component-cell"><span class="type-badge">' + escapeHtml(child.type) + "</span></td>" +
+      '<td class="appears-cell">' + linkify(child.action, child.relatedIds) + "</td>" +
+      '<td class="notes-cell">' + linkify(child.notes || "", child.relatedIds) + "</td>" +
+      "</tr>"
+    );
   }
 
   function render() {
@@ -256,17 +356,21 @@
       const rows = group.rows.map(function (row) {
         const cls = ["ui-row"];
         if (row.deprecated) cls.push("is-deprecated");
-        return (
+        const parentRow = (
           '<tr class="' + cls.join(" ") + '" data-search="' +
           escapeHtml((row.id + " " + row.name + " " + row.component + " " + row.appearsWhen + " " + row.notes).toLowerCase()) +
           '">' +
-          '<td class="id-cell" id="' + row.id + '">' + escapeHtml(row.id) + "</td>" +
+          '<td class="id-cell" id="' + escapeHtml(row.id) + '">' + escapeHtml(row.id) + "</td>" +
           "<td>" + escapeHtml(row.name) + "</td>" +
           '<td class="component-cell"><code>' + escapeHtml(row.component) + "</code></td>" +
           '<td class="appears-cell">' + linkify(row.appearsWhen, row.relatedIds) + "</td>" +
           '<td class="notes-cell">' + linkify(row.notes, row.relatedIds) + "</td>" +
           "</tr>"
         );
+        const childRows = (row.children || []).map(function (child) {
+          return childRowHtml(child, row.id);
+        }).join("");
+        return parentRow + childRows;
       }).join("");
 
       return (
@@ -274,7 +378,7 @@
         "<h2><span class=\"letter\">" + escapeHtml(group.letter) + '</span> ' + escapeHtml(group.folder) +
         ' <span class="count-badge">(' + group.rows.length + ")</span></h2>" +
         "<table>" +
-        "<thead><tr><th>ID</th><th>Name</th><th>Component</th><th>Appears when</th><th>Notes</th></tr></thead>" +
+        "<thead><tr><th>ID</th><th>Name / Element</th><th>Component / Type</th><th>Appears when / Action</th><th>Notes</th></tr></thead>" +
         "<tbody>" + rows + "</tbody>" +
         "</table>" +
         "</section>"
@@ -301,9 +405,37 @@
 
   document.getElementById("search").addEventListener("input", function (e) {
     const q = e.target.value.trim().toLowerCase();
-    document.querySelectorAll("tr.ui-row").forEach(function (row) {
+    const allRows = document.querySelectorAll("tr.ui-row");
+
+    if (q.length === 0) {
+      allRows.forEach(function (row) { row.classList.remove("is-hidden"); });
+      return;
+    }
+
+    const ownMatch = new Map();
+    allRows.forEach(function (row) {
       const hay = row.getAttribute("data-search") || "";
-      row.classList.toggle("is-hidden", q.length > 0 && !hay.includes(q));
+      ownMatch.set(row, hay.includes(q));
+    });
+
+    allRows.forEach(function (row) {
+      if (row.classList.contains("sub-row")) return; // parents handled below
+      const parentMatches = ownMatch.get(row);
+      const rowId = row.querySelector(".id-cell").id;
+      const children = document.querySelectorAll('tr.sub-row[data-parent="' + rowId + '"]');
+      let anyChildMatches = false;
+      children.forEach(function (c) { if (ownMatch.get(c)) anyChildMatches = true; });
+
+      const parentVisible = parentMatches || anyChildMatches;
+      row.classList.toggle("is-hidden", !parentVisible);
+
+      children.forEach(function (c) {
+        // If the parent text itself matched, show all its children for
+        // context. Otherwise show only the children that individually
+        // matched the query.
+        const childVisible = parentMatches || ownMatch.get(c);
+        c.classList.toggle("is-hidden", !childVisible);
+      });
     });
   });
 

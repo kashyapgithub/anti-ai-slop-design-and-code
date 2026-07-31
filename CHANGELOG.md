@@ -28,6 +28,36 @@ it's still current rather than trusting the date above blindly.
   properly as the sixth standing rule and re-synced `templates/AGENTS.md`
   against it.
 
+## 2026-07-27 (one more) — Sub-element hierarchy: b5.a, b5.b, b5.c
+
+- Extended the `UI-DETAIL.md`/`.html` registry one level deeper: a panel
+  with 2+ actionable elements now gets sub-IDs (`b5.a`, `b5.b`, `b5.c`)
+  for each button, input, or conditional banner inside it, using the
+  same dot-notation extension of the existing scheme rather than a
+  reversed or competing one. "Make b5.b show a spinner" is now
+  unambiguous down to the exact element. Gated by the same Rule of
+  Three restraint as elsewhere in the guide — a single-button panel
+  doesn't need sub-IDs, since the panel ID alone is already specific.
+- Updated `templates/UI-DETAIL.md` and `templates/UI-DETAIL.html` to
+  match, with a worked example (`b5` with its cancel/confirm/warning
+  elements).
+- While extending the HTML viewer, found and fixed a real, separate bug
+  in the *existing* cross-reference linking: the `linkify()` regex
+  built ID patterns without escaping regex metacharacters, so a dotted
+  ID like `b5.c` would have matched any string differing only in that
+  one character (`.` is a regex wildcard). Fixed with a proper
+  `escapeRegex()` step. Verified with a targeted test that deliberately
+  injects a near-miss string (`b5X5c`) to confirm it's *not* incorrectly
+  linkified — not just that the intended case still works.
+- Extended search to handle parent/child visibility: a panel shows if
+  it or any of its sub-elements match; a sub-element shows if it
+  matches individually, or if its parent panel's own text matched (in
+  which case all its children show for context). Tested 11 scenarios
+  with a real DOM (jsdom): rendering count, dotted-ID lookup, the
+  regex fix (both the intended match and the proven near-miss
+  rejection), type badges, three search-visibility combinations,
+  clearing search, and a no-match search hiding everything.
+
 ## 2026-07-27 (final for now) — UI-DETAIL.html viewer, and auto-opening it after UI work
 
 - Added `templates/UI-DETAIL.html`: a self-contained, dependency-free
