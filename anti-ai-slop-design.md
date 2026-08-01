@@ -508,11 +508,11 @@ Once a product has more than a handful of screens, "the modal that shows up when
 | b5 | Downgrade confirmation | `DowngradeConfirm.tsx` | User selects a lower plan on the billing page AND `subscription.status === 'active'`. | Blocks downgrade if `usage.seats > newPlan.seatLimit`; shows **b6** instead in that case. |
 
 ### b5 — elements
-| Sub-ID | Element | Type | Action | Notes |
-|--------|---------|------|--------|-------|
-| b5.a | "Cancel" button | button | Closes the modal, returns to the billing page. No request sent. | |
-| b5.b | "Confirm downgrade" button | button | Calls `PATCH /subscription` with the new plan. On success, closes and refreshes the billing page. | Disabled while `isSubmitting`; see **b5.c** for the state that gates it. |
-| b5.c | Seat-count warning banner | banner | — | Only rendered when `usage.seats > newPlan.seatLimit`; its presence is what disables **b5.b**. |
+| Sub-ID | Element | Type | Action | Key props / style | Notes |
+|--------|---------|------|--------|--------------------|-------|
+| b5.a | "Cancel" button | button | Closes the modal, returns to the billing page. No request sent. | `variant="secondary"`, `.btn-secondary` | |
+| b5.b | "Confirm downgrade" button | button | Calls `PATCH /subscription` with the new plan. On success, closes and refreshes the billing page. | `isSubmitting` (state, disables + spinner), `variant="danger"`, `--color-danger` | Disabled while `isSubmitting`; see **b5.c** for the state that gates it. |
+| b5.c | Seat-count warning banner | banner | — | `--color-warning-bg`, `--color-warning-text` | Only rendered when `usage.seats > newPlan.seatLimit`; its presence is what disables **b5.b**. |
 ```
 
 **A panel with more than one actionable element gets sub-IDs, one level deeper, using the same dot notation.** Panel `b5` isn't just "the downgrade modal" — it has a cancel button, a confirm button, and a conditional warning banner, and any of the three might need a change independently. `b5.a`, `b5.b`, `b5.c` make each one individually addressable: "make `b5.b` show a spinner while submitting" is unambiguous in a way "the confirm button on the downgrade modal" isn't once there's more than one button anywhere near it.
@@ -520,7 +520,9 @@ Once a product has more than a handful of screens, "the modal that shows up when
 - **Only break a panel into sub-IDs when it has two or more elements worth distinguishing individually** — a modal with a single "OK" button doesn't need `x1.a`, because there's nothing to disambiguate; the panel ID alone is already specific enough. This is the same Rule of Three restraint as everywhere else in this guide (§17.2) — sub-IDs are earned by actual ambiguity, not added reflexively to every panel.
 - **Sub-IDs are letters, sequential within their panel, in the order the element was added** — same permanence rule as the top level: never renumbered, `[deprecated]` instead of deleted-and-reused.
 - **Only interactive or independently-meaningful elements get a sub-ID** — buttons, inputs, toggles, links, a conditionally-rendered banner or badge. Static text and purely decorative elements don't need one; if it's never going to be the target of "change this," it doesn't need to be individually addressable.
-- **The columns change slightly at this level** — "Type" (button/input/toggle/link/banner) and "Action" (what it actually does when interacted with, or why it's conditionally present) replace "Component" and "Appears when," since a sub-element's relevant facts are usually behavioral rather than structural. Keep "Appears when"-style conditions in the Action or Notes column when an element is itself conditional, as `b5.c` shows above.
+- **"Key props / style" is what makes an entry enough to act on without reopening the file first.** Record the actual prop names, state variables, and design tokens or classes that control the element — not a description of what it looks like, the literal names: `variant="danger"`, `isSubmitting`, `--color-danger`, `.btn-secondary`. "Change b5.b to the warning color" should be answerable straight from this column — swap `--color-danger` for `--color-warning` — without opening `DowngradeConfirm.tsx` to go find out what it's even called.
+- **Anchor the registry into the source, not just the source into the registry.** Add a one-line comment carrying the ID at the top of the element it describes — `// UI-ID: b5.b` in JSX/TSX, `<!-- UI-ID: b5.b -->` in a template — so the link works in both directions: the registry names the file, and grepping the codebase for `UI-ID: b5.b` finds the exact element instead of the whole file. This is a single comment line per registered element, not a new burden — treat it as part of adding the sub-ID, not a separate step.
+- **The columns change slightly at this level** — "Type" (button/input/toggle/link/banner) and "Action" (what it actually does when interacted with, or why it's conditionally present) replace "Component" and "Appears when," and a "Key props / style" column is added, since a sub-element's relevant facts are usually behavioral and stylistic rather than structural. Keep "Appears when"-style conditions in the Action or Notes column when an element is itself conditional, as `b5.c` shows above.
 - **This nests exactly one level deep, on purpose.** A button inside a button doesn't happen in real UI, and if the urge to nest further than `b5.a` arises, that's usually a sign the sub-element should be its own panel with its own top-level ID instead.
 
 - **The "Appears when" column is the entire point — make it a precise, checkable condition, not vague prose.** "Shows up sometimes when editing" is not an entry; "`isEditing === true` AND `draft.hasUnsavedChanges`" is. If the condition is too long for the table, add a footnote below it rather than leaving the cell vague.
@@ -547,6 +549,7 @@ Once a product has more than a handful of screens, "the modal that shows up when
 - [ ] There is exactly one focal point and one primary action per view.
 - [ ] This screen/panel has a `UI-DETAIL.md` entry with a stable ID and a precise, checkable "appears when" condition; if `UI-DETAIL.html` exists, its embedded data matches.
 - [ ] If this panel has 2+ actionable elements, each has its own sub-ID (`b5.a`, `b5.b`) rather than being addressed only by the parent panel's ID.
+- [ ] Each sub-ID's entry names the actual prop/state/token names that control it — not a description — and the element itself carries a matching `UI-ID: <id>` comment in the source.
 
 **Typography**
 - [ ] A real modular scale with distinct steps.

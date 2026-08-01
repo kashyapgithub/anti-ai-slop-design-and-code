@@ -16,6 +16,17 @@
     --deprecated: #b3541e;
     --deprecated-soft: #fdf1e9;
     --radius: 6px;
+    /* Semantic, deliberate per-type colors — not decorative rainbow.
+       button = primary action (matches --accent); input = form data
+       (violet); link = navigation (teal); toggle = a switched state
+       (amber); banner = something conditional worth noticing (rose).
+       Unrecognized types fall back to a neutral gray, not a random hue. */
+    --type-button: #3454d1;    --type-button-bg: #edf0fc;
+    --type-input:  #7c3aed;    --type-input-bg:  #f3ecfd;
+    --type-link:   #0d9488;    --type-link-bg:   #e6f6f4;
+    --type-toggle: #b45309;    --type-toggle-bg: #fdf1e0;
+    --type-banner: #be123c;    --type-banner-bg: #fde8ec;
+    --type-default:#5a6270;    --type-default-bg:#eef0f3;
   }
   * { box-sizing: border-box; }
   body {
@@ -48,17 +59,35 @@
   #search {
     width: 100%;
     max-width: 420px;
-    padding: 9px 12px;
+    padding: 9px 34px 9px 12px;
     font-size: 0.9rem;
     border: 1px solid var(--border);
     border-radius: var(--radius);
     background: var(--surface);
     color: var(--ink);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
   }
   #search:focus {
-    outline: 2px solid var(--accent);
-    outline-offset: 1px;
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
   }
+  .search-wrap { position: relative; max-width: 420px; }
+  .search-shortcut-hint {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.72rem;
+    color: var(--ink-muted);
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1px 5px;
+    pointer-events: none;
+  }
+  #search:focus ~ .search-shortcut-hint { display: none; }
   main {
     max-width: 960px;
     margin: 0 auto;
@@ -114,6 +143,9 @@
     vertical-align: top;
   }
   tr:last-child td { border-bottom: none; }
+  tr.ui-row { transition: background-color 0.12s ease; }
+  tr.ui-row:hover td { background: var(--surface-alt); }
+  tr.sub-row:hover td { background: #eef0f4; }
   tr.is-hidden { display: none; }
   tr.is-deprecated { opacity: 0.55; }
   tr.is-deprecated td.id-cell::after {
@@ -151,15 +183,40 @@
     left: 16px;
     color: var(--border);
   }
+  .id-wrap { display: inline-flex; align-items: center; gap: 6px; }
+  .copy-btn {
+    border: none;
+    background: transparent;
+    color: var(--ink-muted);
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    line-height: 1;
+    opacity: 0;
+    transition: opacity 0.1s ease, background-color 0.1s ease, color 0.1s ease;
+  }
+  tr.ui-row:hover .copy-btn, .copy-btn:focus-visible { opacity: 1; }
+  .copy-btn:hover { background: var(--accent-soft); color: var(--accent); }
+  .copy-btn.is-copied { opacity: 1; color: #0a7d3d; }
   .type-badge {
     font-size: 0.68rem;
     text-transform: uppercase;
     letter-spacing: 0.03em;
-    color: var(--ink-muted);
-    background: var(--surface);
-    border: 1px solid var(--border);
-    padding: 1px 7px;
+    font-weight: 600;
+    padding: 2px 8px;
     border-radius: 4px;
+  }
+  .props-cell { display: flex; flex-wrap: wrap; gap: 4px; }
+  .prop-chip {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.74rem;
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    color: var(--ink);
+    padding: 1px 6px;
+    border-radius: 4px;
+    white-space: nowrap;
   }
   .component-cell code {
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -177,7 +234,7 @@
     font-weight: 600;
   }
   .notes-cell a:hover, .appears-cell a:hover { text-decoration: underline; }
-  .empty-state {
+  .empty-state, .no-results {
     text-align: center;
     padding: 40px 20px;
     color: var(--ink-muted);
@@ -199,7 +256,10 @@
     Last synced: <code id="synced-at">(set this when you sync)</code>.
     See <code>anti-ai-slop-design.md</code> §12.3.
   </p>
-  <input id="search" type="search" placeholder="Search by ID, name, component, or condition&hellip;" aria-label="Search UI registry">
+  <div class="search-wrap">
+    <input id="search" type="search" placeholder="Search by ID, name, component, or condition&hellip;" aria-label="Search UI registry">
+    <span class="search-shortcut-hint">/</span>
+  </div>
 </header>
 
 <main id="app"></main>
@@ -242,6 +302,7 @@
                 element: "\"Sign in\" button",
                 type: "button",
                 action: "Submits the form; on success redirects to dashboard.",
+                props: ["isSubmitting", ".btn-primary"],
                 notes: "Disabled while submitting.",
                 relatedIds: []
               },
@@ -250,6 +311,7 @@
                 element: "\"Forgot password?\" link",
                 type: "link",
                 action: "Opens a2.",
+                props: ["--color-link"],
                 notes: "",
                 relatedIds: ["a2"]
               }
@@ -282,6 +344,7 @@
                 element: "\"Cancel\" button",
                 type: "button",
                 action: "Closes the modal, returns to the billing page. No request sent.",
+                props: ["variant=\"secondary\"", ".btn-secondary"],
                 notes: "",
                 relatedIds: []
               },
@@ -290,6 +353,7 @@
                 element: "\"Confirm downgrade\" button",
                 type: "button",
                 action: "Calls PATCH /subscription with the new plan. On success, closes and refreshes the billing page.",
+                props: ["isSubmitting", "variant=\"danger\"", "--color-danger"],
                 notes: "Disabled while isSubmitting; see b5.c for the state that gates it.",
                 relatedIds: ["b5.c"]
               },
@@ -298,6 +362,7 @@
                 element: "Seat-count warning banner",
                 type: "banner",
                 action: "\u2014",
+                props: ["--color-warning-bg", "--color-warning-text"],
                 notes: "Only rendered when usage.seats > newPlan.seatLimit; its presence is what disables b5.b.",
                 relatedIds: ["b5.b"]
               }
@@ -307,6 +372,55 @@
       }
     ]
   };
+
+  // Deliberate, semantic per-type colors — see the CSS custom properties
+  // above for the reasoning. Add an entry here if you introduce a new
+  // element type; anything not listed falls back to a neutral gray
+  // rather than picking a random hue.
+  const TYPE_COLORS = {
+    button: "button",
+    input: "input",
+    toggle: "toggle",
+    link: "link",
+    banner: "banner"
+  };
+
+  function typeBadgeHtml(type) {
+    const key = TYPE_COLORS[type] || "default";
+    return (
+      '<span class="type-badge" style="color: var(--type-' + key +
+      '); background: var(--type-' + key + '-bg);">' + escapeHtml(type) + "</span>"
+    );
+  }
+
+  function propsHtml(props) {
+    if (!props || props.length === 0) return "";
+    return (
+      '<div class="props-cell">' +
+      props.map(function (p) { return '<span class="prop-chip">' + escapeHtml(p) + "</span>"; }).join("") +
+      "</div>"
+    );
+  }
+
+  const COPY_ICON_SVG =
+    '<svg width="13" height="13" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
+    '<rect x="5" y="5" width="9" height="9" rx="1.5" stroke="currentColor" stroke-width="1.3"/>' +
+    '<path d="M3.5 10.5H2.75A1.25 1.25 0 0 1 1.5 9.25v-6.5A1.25 1.25 0 0 1 2.75 1.5h6.5A1.25 1.25 0 0 1 10.5 2.75V3.5" stroke="currentColor" stroke-width="1.3"/>' +
+    "</svg>";
+  const CHECK_ICON_SVG =
+    '<svg width="13" height="13" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
+    '<path d="M3 8.5L6.2 11.5L13 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>' +
+    "</svg>";
+
+  function idWithCopyHtml(id) {
+    return (
+      '<span class="id-wrap">' +
+      '<span id="' + escapeHtml(id) + '">' + escapeHtml(id) + "</span>" +
+      '<button type="button" class="copy-btn" data-copy-id="' + escapeHtml(id) +
+      '" title="Copy ID" aria-label="Copy ID ' + escapeHtml(id) + '">' + COPY_ICON_SVG + "</button>" +
+      "</span>"
+    );
+  }
 
   function escapeRegex(s) {
     return String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -332,12 +446,13 @@
   function childRowHtml(child, parentId) {
     return (
       '<tr class="ui-row sub-row" data-parent="' + escapeHtml(parentId) + '" data-search="' +
-      escapeHtml((child.id + " " + child.element + " " + child.type + " " + child.action + " " + (child.notes || "")).toLowerCase()) +
+      escapeHtml((child.id + " " + child.element + " " + child.type + " " + child.action + " " + (child.notes || "") + " " + (child.props || []).join(" ")).toLowerCase()) +
       '">' +
-      '<td class="id-cell sub-id-cell" id="' + escapeHtml(child.id) + '">' + escapeHtml(child.id) + "</td>" +
+      '<td class="id-cell">' + idWithCopyHtml(child.id, "sub-id-cell") + "</td>" +
       "<td>" + escapeHtml(child.element) + "</td>" +
-      '<td class="component-cell"><span class="type-badge">' + escapeHtml(child.type) + "</span></td>" +
+      "<td>" + typeBadgeHtml(child.type) + "</td>" +
       '<td class="appears-cell">' + linkify(child.action, child.relatedIds) + "</td>" +
+      "<td>" + propsHtml(child.props) + "</td>" +
       '<td class="notes-cell">' + linkify(child.notes || "", child.relatedIds) + "</td>" +
       "</tr>"
     );
@@ -360,10 +475,11 @@
           '<tr class="' + cls.join(" ") + '" data-search="' +
           escapeHtml((row.id + " " + row.name + " " + row.component + " " + row.appearsWhen + " " + row.notes).toLowerCase()) +
           '">' +
-          '<td class="id-cell" id="' + escapeHtml(row.id) + '">' + escapeHtml(row.id) + "</td>" +
+          '<td class="id-cell">' + idWithCopyHtml(row.id) + "</td>" +
           "<td>" + escapeHtml(row.name) + "</td>" +
           '<td class="component-cell"><code>' + escapeHtml(row.component) + "</code></td>" +
           '<td class="appears-cell">' + linkify(row.appearsWhen, row.relatedIds) + "</td>" +
+          "<td></td>" +
           '<td class="notes-cell">' + linkify(row.notes, row.relatedIds) + "</td>" +
           "</tr>"
         );
@@ -378,8 +494,9 @@
         "<h2><span class=\"letter\">" + escapeHtml(group.letter) + '</span> ' + escapeHtml(group.folder) +
         ' <span class="count-badge">(' + group.rows.length + ")</span></h2>" +
         "<table>" +
-        "<thead><tr><th>ID</th><th>Name / Element</th><th>Component / Type</th><th>Appears when / Action</th><th>Notes</th></tr></thead>" +
-        "<tbody>" + rows + "</tbody>" +
+        "<thead><tr><th>ID</th><th>Name / Element</th><th>Component / Type</th><th>Appears when / Action</th><th>Key props / style</th><th>Notes</th></tr></thead>" +
+        "<tbody>" + rows + '<tr class="no-results-row is-hidden"><td colspan="6" class="no-results">No matches for this search.</td></tr>' +
+        "</tbody>" +
         "</table>" +
         "</section>"
       );
@@ -409,6 +526,7 @@
 
     if (q.length === 0) {
       allRows.forEach(function (row) { row.classList.remove("is-hidden"); });
+      document.querySelectorAll(".no-results-row").forEach(function (r) { r.classList.add("is-hidden"); });
       return;
     }
 
@@ -421,7 +539,7 @@
     allRows.forEach(function (row) {
       if (row.classList.contains("sub-row")) return; // parents handled below
       const parentMatches = ownMatch.get(row);
-      const rowId = row.querySelector(".id-cell").id;
+      const rowId = row.querySelector(".id-cell [id]").id;
       const children = document.querySelectorAll('tr.sub-row[data-parent="' + rowId + '"]');
       let anyChildMatches = false;
       children.forEach(function (c) { if (ownMatch.get(c)) anyChildMatches = true; });
@@ -437,6 +555,70 @@
         c.classList.toggle("is-hidden", !childVisible);
       });
     });
+
+    // Show a "no matches" row per table whose every real row is hidden.
+    document.querySelectorAll(".feature-group table").forEach(function (table) {
+      const noResultsRow = table.querySelector(".no-results-row");
+      if (!noResultsRow) return;
+      const anyVisible = Array.from(table.querySelectorAll("tr.ui-row"))
+        .some(function (r) { return !r.classList.contains("is-hidden"); });
+      noResultsRow.classList.toggle("is-hidden", anyVisible);
+    });
+  });
+
+  // Copy an ID to the clipboard on click, with a fallback for contexts
+  // (like a plain file:// page in some browsers) where the modern
+  // Clipboard API isn't available. Success is shown by briefly swapping
+  // the icon, not an alert — the point is speed, not interruption.
+  function copyText(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(text);
+    }
+    return new Promise(function (resolve, reject) {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand("copy") ? resolve() : reject(new Error("execCommand copy failed"));
+      } catch (err) {
+        reject(err);
+      } finally {
+        document.body.removeChild(ta);
+      }
+    });
+  }
+
+  document.getElementById("app").addEventListener("click", function (e) {
+    const btn = e.target.closest(".copy-btn");
+    if (!btn) return;
+    const id = btn.getAttribute("data-copy-id");
+    copyText(id).then(function () {
+      const original = btn.innerHTML;
+      btn.innerHTML = CHECK_ICON_SVG;
+      btn.classList.add("is-copied");
+      setTimeout(function () {
+        btn.innerHTML = original;
+        btn.classList.remove("is-copied");
+      }, 1200);
+    }).catch(function () {
+      /* Clipboard access denied or unavailable — the ID is still
+         visible and selectable by hand, so this fails quietly rather
+         than interrupting with an error dialog. */
+    });
+  });
+
+  // Press "/" anywhere outside a text field to jump straight to search —
+  // matches the convention from GitHub and similar tools.
+  document.addEventListener("keydown", function (e) {
+    if (e.key !== "/") return;
+    const active = document.activeElement;
+    const isTyping = active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA" || active.isContentEditable);
+    if (isTyping) return;
+    e.preventDefault();
+    document.getElementById("search").focus();
   });
 
   render();

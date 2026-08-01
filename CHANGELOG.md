@@ -28,6 +28,40 @@ it's still current rather than trusting the date above blindly.
   properly as the sixth standing rule and re-synced `templates/AGENTS.md`
   against it.
 
+## 2026-07-27 (still more) — Modify-from-the-registry detail, and a real HTML upgrade
+
+- Extended each sub-element entry with **"Key props / style"**: the
+  actual prop names, state variables, and design tokens/classes that
+  control it (`isSubmitting`, `variant="danger"`, `--color-danger`),
+  not a description — the point being that a change can be made
+  straight from the registry without reopening the component first.
+- Added the **source-anchor convention**: a one-line `// UI-ID: b5.b`
+  comment on the element it describes, so the link works in both
+  directions — the registry names the file, and grepping the codebase
+  for the ID finds the exact element.
+- Rebuilt `UI-DETAIL.html`'s visual design around the design guide's own
+  color principles rather than decoration: a deliberate, semantic
+  per-type color system (button/input/link/toggle/banner each a
+  distinct, muted, purposeful hue — not a random rainbow), a
+  click-to-copy button on every ID (with a Clipboard-API-unavailable
+  fallback), a `/` keyboard shortcut to jump to search, a proper
+  no-results state, and hover/transition polish throughout.
+- Caught and fixed a real self-consistency slip while building the copy
+  button: the first draft used a 📋 clipboard emoji for the icon,
+  directly contradicting this repo's own top design rule. Replaced with
+  a real inline SVG icon before it shipped.
+- Fixed a second real bug this round: moving the `id` attribute onto a
+  nested span (to make room for the copy button) silently broke the
+  existing search handler's `.id-cell` lookup and needed a follow-up
+  fix — caught immediately by re-running the test suite, not by luck.
+- Verified all of it with jsdom rather than trusting it by inspection:
+  18 total test assertions across two rounds — rendering counts, props
+  chips, color-coded badges, the cross-reference regex fix (still
+  holding), hash-jump highlighting, copy-to-clipboard (both the modern
+  API and the `execCommand` fallback path), the `/` shortcut (including
+  that it correctly does *not* fire while already typing in search),
+  and the no-results state appearing and clearing correctly.
+
 ## 2026-07-27 (one more) — Sub-element hierarchy: b5.a, b5.b, b5.c
 
 - Extended the `UI-DETAIL.md`/`.html` registry one level deeper: a panel

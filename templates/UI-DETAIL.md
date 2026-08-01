@@ -22,6 +22,12 @@ that matter more than anything else in this file:
    panel with only one thing to interact with; the panel ID alone is
    already specific enough there. See the example below and the code
    guide's Rule of Three (§17.2) for when the extra level earns its keep.
+4. **Each sub-ID records the actual prop/state/token names, not a
+   description** — `variant="danger"`, `isSubmitting`, `--color-danger` —
+   so a change can be made straight from this file without reopening the
+   component first. Anchor it into the source too: a one-line
+   `// UI-ID: b5.b` comment on the element it describes, so the link
+   works in both directions.
 
 Update this file in the same commit that adds or changes the UI element
 it describes. A stale registry is worse than none.
@@ -49,12 +55,14 @@ If a panel has 2+ actionable elements, add a sub-table directly below
 its row, e.g.:
 
 ### a1 — elements
-| Sub-ID | Element | Type | Action | Notes |
-|--------|---------|------|--------|-------|
-| a1.a | "Sign in" button | button | Submits the form; on success redirects to dashboard. | Disabled while submitting. |
-| a1.b | "Forgot password?" link | link | Opens **a2**. | |
+| Sub-ID | Element | Type | Action | Key props / style | Notes |
+|--------|---------|------|--------|--------------------|-------|
+| a1.a | "Sign in" button | button | Submits the form; on success redirects to dashboard. | `isSubmitting` (disables + spinner), `.btn-primary` | |
+| a1.b | "Forgot password?" link | link | Opens **a2**. | `--color-link` | |
 
 Sub-IDs are letters, sequential within their panel, in the order added
 — same permanence rule as the top level. Only interactive or
-independently-meaningful elements need one; static text doesn't.
+independently-meaningful elements need one; static text doesn't. Add a
+matching `// UI-ID: a1.a` comment in the component near each element
+that gets a sub-ID.
 -->
