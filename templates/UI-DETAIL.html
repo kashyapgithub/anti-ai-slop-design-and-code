@@ -72,6 +72,29 @@
     margin: 0 0 14px;
   }
   .sync-note code { background: var(--surface-alt); padding: 1px 5px; border-radius: 4px; }
+  .view-toggle {
+    display: inline-flex;
+    gap: 2px;
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 3px;
+    margin-bottom: 14px;
+  }
+  .view-btn {
+    border: none;
+    background: transparent;
+    color: var(--ink-muted);
+    font-size: 0.82rem;
+    font-weight: 600;
+    padding: 6px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.12s ease, color 0.12s ease;
+  }
+  .view-btn:hover { color: var(--ink); }
+  .view-btn.is-active { background: var(--surface); color: var(--accent); box-shadow: 0 1px 2px rgba(0,0,0,0.08); }
+  .view-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .quick-nav {
     display: flex;
     flex-wrap: wrap;
@@ -108,6 +131,120 @@
     font-weight: 400;
     margin-top: 2px;
   }
+
+  /* ---- Map view ---- */
+  #map { position: relative; }
+  .map-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    font-size: 0.76rem;
+    color: var(--ink-muted);
+    margin-bottom: 16px;
+    align-items: center;
+  }
+  .map-legend .swatch {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+    margin-right: 5px;
+    vertical-align: -1px;
+  }
+  .map-group {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 20px 22px;
+    margin-bottom: 24px;
+  }
+  .map-group-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin: 0 0 14px;
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+  .map-lane {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: flex-start;
+  }
+  .map-node {
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 8px;
+    padding: 10px 14px;
+    min-width: 180px;
+    max-width: 260px;
+    transition: box-shadow 0.15s ease, border-color 0.15s ease;
+    scroll-margin-top: 90px;
+  }
+  .map-node:hover, .map-node.is-connected {
+    box-shadow: 0 2px 10px rgba(52, 84, 209, 0.14);
+    border-left-color: var(--accent);
+  }
+  .map-node.is-deprecated { opacity: 0.5; }
+  .map-node-id {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-weight: 700;
+    color: var(--accent);
+    font-size: 0.82rem;
+  }
+  .map-node-name {
+    font-size: 0.82rem;
+    color: var(--ink);
+    margin-top: 2px;
+  }
+  .map-node-condition {
+    font-size: 0.72rem;
+    color: var(--ink-muted);
+    margin-top: 6px;
+    line-height: 1.4;
+    border-top: 1px dashed var(--border);
+    padding-top: 6px;
+  }
+  .map-subnodes {
+    margin-top: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+  .map-subnode {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 999px;
+    scroll-margin-top: 90px;
+  }
+  #map-connectors {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    overflow: visible;
+  }
+  #map-connectors path {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 1.5;
+    opacity: 0.45;
+    transition: opacity 0.15s ease, stroke-width 0.15s ease;
+  }
+  #map-connectors path.is-highlighted { opacity: 0.95; stroke-width: 2.25; }
+  .map-empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--ink-muted);
+    font-size: 0.9rem;
+  }
+
   #search {
     width: 100%;
     max-width: 420px;
@@ -310,6 +447,10 @@
     Last synced: <code id="synced-at">(set this when you sync)</code>.
     See <code>anti-ai-slop-design.md</code> §12.3.
   </p>
+  <div class="view-toggle" role="tablist" aria-label="Registry view">
+    <button type="button" role="tab" id="tab-table" aria-selected="true" aria-controls="app" class="view-btn is-active">Table</button>
+    <button type="button" role="tab" id="tab-map" aria-selected="false" aria-controls="map" class="view-btn">Map</button>
+  </div>
   <nav class="quick-nav" id="quick-nav" aria-label="Jump to feature group"></nav>
   <div class="search-wrap">
     <input id="search" type="search" placeholder="Search by ID, name, component, or condition&hellip;" aria-label="Search UI registry">
@@ -319,7 +460,8 @@
 </header>
 
 <main id="main-content" tabindex="-1">
-  <div id="app"></div>
+  <div id="app" role="tabpanel" aria-labelledby="tab-table"></div>
+  <div id="map" role="tabpanel" aria-labelledby="tab-map" hidden></div>
 </main>
 
 <script>
@@ -530,7 +672,7 @@
 
     quickNav.innerHTML = DATA.groups.map(function (group) {
       return (
-        '<a href="#group-' + escapeHtml(group.letter) + '">' +
+        '<a href="#group-' + escapeHtml(group.letter) + '" data-group="' + escapeHtml(group.letter) + '">' +
         escapeHtml(group.letter) + " &middot; " + escapeHtml(group.folder.replace(/\/$/, "").split("/").pop()) +
         "</a>"
       );
@@ -590,6 +732,116 @@
         }
       }
     }
+  }
+
+  // ---- Map view ----
+  // Pure and directly testable: walks DATA and returns every
+  // relationship as a deduplicated { from, to } pair, regardless of
+  // which side of the pair declared relatedIds first (a1 -> a2 and
+  // a2 -> a1 collapse to one connector, not two).
+  function collectConnections(data) {
+    const seen = new Set();
+    const pairs = [];
+    function addPair(a, b) {
+      const key = [a, b].sort().join("::");
+      if (seen.has(key) || a === b) return;
+      seen.add(key);
+      pairs.push({ from: a, to: b });
+    }
+    (data.groups || []).forEach(function (group) {
+      (group.rows || []).forEach(function (row) {
+        (row.relatedIds || []).forEach(function (rid) { addPair(row.id, rid); });
+        (row.children || []).forEach(function (child) {
+          (child.relatedIds || []).forEach(function (rid) { addPair(child.id, rid); });
+        });
+      });
+    });
+    return pairs;
+  }
+
+  function renderMap() {
+    const mapEl = document.getElementById("map");
+
+    if (!DATA.groups.length) {
+      mapEl.innerHTML = '<p class="map-empty">No entries yet — the map fills in as panels are added to DATA.</p>';
+      return;
+    }
+
+    const legend = (
+      '<div class="map-legend">' +
+      Object.keys(TYPE_COLORS).concat(["default"]).map(function (t) {
+        return '<span><span class="swatch" style="background: var(--type-' + t + ');"></span>' + t + "</span>";
+      }).join("") +
+      "</div>"
+    );
+
+    const groups = DATA.groups.map(function (group) {
+      const nodes = group.rows.map(function (row) {
+        const subnodes = (row.children || []).map(function (child) {
+          const key = TYPE_COLORS[child.type] || "default";
+          return (
+            '<span class="map-subnode" data-map-id="' + escapeHtml(child.id) +
+            '" style="color: var(--type-' + key + '); background: var(--type-' + key + '-bg);">' +
+            escapeHtml(child.id) + "</span>"
+          );
+        }).join("");
+        return (
+          '<div class="map-node' + (row.deprecated ? " is-deprecated" : "") + '" data-map-id="' + escapeHtml(row.id) + '">' +
+          '<div class="map-node-id">' + escapeHtml(row.id) + "</div>" +
+          '<div class="map-node-name">' + escapeHtml(row.name) + "</div>" +
+          '<div class="map-node-condition">' + escapeHtml(row.appearsWhen || "") + "</div>" +
+          (subnodes ? '<div class="map-subnodes">' + subnodes + "</div>" : "") +
+          "</div>"
+        );
+      }).join("");
+
+      return (
+        '<div class="map-group" id="map-group-' + escapeHtml(group.letter) + '">' +
+        '<h3 class="map-group-title"><span class="letter">' + escapeHtml(group.letter) + "</span> " + escapeHtml(group.folder) + "</h3>" +
+        '<div class="map-lane">' + nodes + "</div>" +
+        "</div>"
+      );
+    }).join("");
+
+    mapEl.innerHTML = legend + groups + '<svg id="map-connectors" aria-hidden="true"></svg>';
+    drawConnectors();
+  }
+
+  function drawConnectors() {
+    const svg = document.getElementById("map-connectors");
+    const mapEl = document.getElementById("map");
+    if (!svg || !mapEl) return;
+    svg.innerHTML =
+      '<defs><marker id="arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto-start-reverse">' +
+      '<path d="M0,0 L8,4 L0,8 Z" fill="var(--accent)"></path></marker></defs>';
+
+    const mapRect = mapEl.getBoundingClientRect();
+    // If the map isn't actually laid out yet (hidden, or a test
+    // environment with no real layout engine), bounding rects are all
+    // zero — skip drawing rather than plot garbage lines at (0,0).
+    if (mapRect.width === 0 && mapRect.height === 0) return;
+
+    collectConnections(DATA).forEach(function (pair) {
+      const fromEl = mapEl.querySelector('[data-map-id="' + pair.from + '"]');
+      const toEl = mapEl.querySelector('[data-map-id="' + pair.to + '"]');
+      if (!fromEl || !toEl) return;
+      const r1 = fromEl.getBoundingClientRect();
+      const r2 = toEl.getBoundingClientRect();
+      if ((r1.width === 0 && r1.height === 0) || (r2.width === 0 && r2.height === 0)) return;
+
+      const x1 = r1.left + r1.width / 2 - mapRect.left;
+      const y1 = r1.top + r1.height / 2 - mapRect.top;
+      const x2 = r2.left + r2.width / 2 - mapRect.left;
+      const y2 = r2.top + r2.height / 2 - mapRect.top;
+      const midY = (y1 + y2) / 2;
+
+      const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      path.setAttribute("d", "M" + x1 + "," + y1 + " C " + x1 + "," + midY + " " + x2 + "," + midY + " " + x2 + "," + y2);
+      path.setAttribute("marker-end", "url(#arrow)");
+      path.setAttribute("data-from", pair.from);
+      path.setAttribute("data-to", pair.to);
+      svg.appendChild(path);
+    });
   }
 
   function announceResults(q) {
@@ -706,7 +958,81 @@
     document.getElementById("search").focus();
   });
 
+  // Table / Map view toggle.
+  let currentView = "table";
+  function setView(view) {
+    currentView = view;
+    const tableBtn = document.getElementById("tab-table");
+    const mapBtn = document.getElementById("tab-map");
+    const app = document.getElementById("app");
+    const map = document.getElementById("map");
+
+    const showTable = view === "table";
+    app.hidden = !showTable;
+    map.hidden = showTable;
+    tableBtn.classList.toggle("is-active", showTable);
+    mapBtn.classList.toggle("is-active", !showTable);
+    tableBtn.setAttribute("aria-selected", String(showTable));
+    mapBtn.setAttribute("aria-selected", String(!showTable));
+
+    if (!showTable) {
+      // Positions only make sense once the map is actually visible —
+      // (re)draw connectors now that layout can be measured. Fall back
+      // to setTimeout if requestAnimationFrame isn't available in this
+      // environment, rather than throwing and silently skipping the draw.
+      if (typeof requestAnimationFrame === "function") {
+        requestAnimationFrame(drawConnectors);
+      } else {
+        setTimeout(drawConnectors, 0);
+      }
+    }
+  }
+  document.getElementById("tab-table").addEventListener("click", function () { setView("table"); });
+  document.getElementById("tab-map").addEventListener("click", function () { setView("map"); });
+
+  // Quick-nav works from either view: switch view first if needed, then
+  // scroll to that group's section in whichever view is now showing.
+  document.getElementById("quick-nav").addEventListener("click", function (e) {
+    const link = e.target.closest("a[data-group]");
+    if (!link) return;
+    e.preventDefault();
+    const letter = link.getAttribute("data-group");
+    const targetId = (currentView === "table" ? "group-" : "map-group-") + letter;
+    const target = document.getElementById(targetId);
+    if (target && typeof target.scrollIntoView === "function") {
+      try { target.scrollIntoView({ block: "start", behavior: "smooth" }); } catch (e2) { /* best-effort */ }
+    }
+  });
+
+  // Hovering (or focusing) a node highlights its connectors, so a busy
+  // map stays readable — the other lines don't visually compete for
+  // attention until you ask.
+  document.getElementById("map").addEventListener("mouseover", function (e) {
+    const node = e.target.closest("[data-map-id]");
+    if (!node) return;
+    const id = node.getAttribute("data-map-id");
+    document.querySelectorAll("#map-connectors path").forEach(function (p) {
+      if (p.getAttribute("data-from") === id || p.getAttribute("data-to") === id) {
+        p.classList.add("is-highlighted");
+      }
+    });
+  });
+  document.getElementById("map").addEventListener("mouseout", function (e) {
+    const node = e.target.closest("[data-map-id]");
+    if (!node) return;
+    document.querySelectorAll("#map-connectors path.is-highlighted").forEach(function (p) {
+      p.classList.remove("is-highlighted");
+    });
+  });
+
+  // Redraw connectors on resize, but only while the map is the visible
+  // view — no point recomputing positions no one can see.
+  window.addEventListener("resize", function () {
+    if (currentView === "map") drawConnectors();
+  });
+
   render();
+  renderMap();
 </script>
 
 </body>
