@@ -28,6 +28,39 @@ it's still current rather than trusting the date above blindly.
   properly as the sixth standing rule and re-synced `templates/AGENTS.md`
   against it.
 
+## 2026-07-27 (yet again) — Navigation, descriptions, and real accessibility fixes
+
+- Added **quick-jump navigation**: a row of pills, one per feature
+  letter group, at the top of the viewer, so moving between groups no
+  longer requires scrolling and hunting.
+- Added an optional **panel description** field — a one-line summary of
+  what a panel actually *is/does*, rendered under its name — since
+  "appears when" is a condition, not a description, and nothing
+  previously answered "what is this, in plain language."
+- **Actually verified WCAG contrast** rather than assuming the color
+  system passed: computed real contrast ratios for every color pair in
+  the viewer. Found one genuine failure — the teal used for `link`-type
+  badges was 3.36:1 against its background, below the 4.5:1 this
+  repo's own design guide requires for text — and darkened it to a
+  value that measures 4.91:1, still clearly the same hue.
+- Added real accessibility fixes, not just color: a skip-to-content
+  link, `scope="col"` on every table header, an `aria-live="polite"`
+  status region that announces search result counts for screen reader
+  users, `aria-labelledby` linking each feature-group section to its
+  heading, and `prefers-reduced-motion` support disabling all
+  transitions for anyone who's set that preference.
+- Caught and fixed a real markup bug introduced while adding the skip
+  link: an element ended up with two `id` attributes on it, which is
+  invalid HTML and would have silently broken the skip link's target.
+  Fixed by separating the skip-link landmark from the JS-injectable
+  content container.
+- Verified all of it with jsdom: 16 new assertions (quick-nav pill
+  count and targets, table header scope, description rendering
+  present/absent correctly, live-region role/aria-live attributes, and
+  the actual announced text after searching, clearing, and a no-match
+  search) plus a full 10-assertion regression pass confirming nothing
+  from the previous rounds broke.
+
 ## 2026-07-27 (still more) — Modify-from-the-registry detail, and a real HTML upgrade
 
 - Extended each sub-element entry with **"Key props / style"**: the

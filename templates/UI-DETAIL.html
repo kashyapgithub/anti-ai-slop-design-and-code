@@ -23,11 +23,27 @@
        Unrecognized types fall back to a neutral gray, not a random hue. */
     --type-button: #3454d1;    --type-button-bg: #edf0fc;
     --type-input:  #7c3aed;    --type-input-bg:  #f3ecfd;
-    --type-link:   #0d9488;    --type-link-bg:   #e6f6f4;
+    --type-link:   #0f766e;    --type-link-bg:   #e6f6f4;
     --type-toggle: #b45309;    --type-toggle-bg: #fdf1e0;
     --type-banner: #be123c;    --type-banner-bg: #fde8ec;
     --type-default:#5a6270;    --type-default-bg:#eef0f3;
   }
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; scroll-behavior: auto !important; }
+  }
+  .skip-link {
+    position: absolute;
+    left: -999px;
+    top: 0;
+    background: var(--accent);
+    color: #fff;
+    padding: 10px 16px;
+    z-index: 100;
+    border-radius: 0 0 6px 0;
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+  .skip-link:focus { left: 0; }
   * { box-sizing: border-box; }
   body {
     margin: 0;
@@ -56,6 +72,42 @@
     margin: 0 0 14px;
   }
   .sync-note code { background: var(--surface-alt); padding: 1px 5px; border-radius: 4px; }
+  .quick-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 0 0 14px;
+  }
+  .quick-nav a {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--accent);
+    background: var(--accent-soft);
+    border: 1px solid transparent;
+    padding: 3px 10px;
+    border-radius: 999px;
+    text-decoration: none;
+    transition: background-color 0.12s ease, border-color 0.12s ease;
+  }
+  .quick-nav a:hover { border-color: var(--accent); }
+  .quick-nav a:focus-visible, .copy-btn:focus-visible, #search:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  .results-status {
+    font-size: 0.78rem;
+    color: var(--ink-muted);
+    margin-top: 6px;
+    min-height: 1.1em;
+  }
+  .panel-description {
+    display: block;
+    color: var(--ink-muted);
+    font-size: 0.8rem;
+    font-weight: 400;
+    margin-top: 2px;
+  }
   #search {
     width: 100%;
     max-width: 420px;
@@ -249,6 +301,8 @@
 </head>
 <body>
 
+<a class="skip-link" href="#main-content">Skip to registry</a>
+
 <header>
   <h1>UI Detail Registry</h1>
   <p class="sync-note">
@@ -256,13 +310,17 @@
     Last synced: <code id="synced-at">(set this when you sync)</code>.
     See <code>anti-ai-slop-design.md</code> §12.3.
   </p>
+  <nav class="quick-nav" id="quick-nav" aria-label="Jump to feature group"></nav>
   <div class="search-wrap">
     <input id="search" type="search" placeholder="Search by ID, name, component, or condition&hellip;" aria-label="Search UI registry">
     <span class="search-shortcut-hint">/</span>
   </div>
+  <p class="results-status" id="results-status" role="status" aria-live="polite"></p>
 </header>
 
-<main id="app"></main>
+<main id="main-content" tabindex="-1">
+  <div id="app"></div>
+</main>
 
 <script>
   // ---------------------------------------------------------------------
@@ -334,6 +392,7 @@
           {
             id: "b5",
             name: "Downgrade confirmation",
+            description: "A confirmation modal that warns the user before downgrading their plan, blocking the action if their current usage wouldn't fit on the new plan.",
             component: "DowngradeConfirm.tsx",
             appearsWhen: "User selects a lower plan on the billing page AND subscription.status === 'active'.",
             notes: "Blocks downgrade if usage.seats > newPlan.seatLimit; shows b6 instead in that case.",
@@ -461,22 +520,35 @@
   function render() {
     const app = document.getElementById("app");
     document.getElementById("synced-at").textContent = DATA.syncedAt;
+    const quickNav = document.getElementById("quick-nav");
 
     if (!DATA.groups.length) {
       app.innerHTML = '<p class="empty-state">No entries yet. Add rows to the DATA object in this file (and to UI-DETAIL.md) as panels are built.</p>';
+      quickNav.innerHTML = "";
       return;
     }
+
+    quickNav.innerHTML = DATA.groups.map(function (group) {
+      return (
+        '<a href="#group-' + escapeHtml(group.letter) + '">' +
+        escapeHtml(group.letter) + " &middot; " + escapeHtml(group.folder.replace(/\/$/, "").split("/").pop()) +
+        "</a>"
+      );
+    }).join("");
 
     app.innerHTML = DATA.groups.map(function (group) {
       const rows = group.rows.map(function (row) {
         const cls = ["ui-row"];
         if (row.deprecated) cls.push("is-deprecated");
+        const descHtml = row.description
+          ? '<span class="panel-description">' + escapeHtml(row.description) + "</span>"
+          : "";
         const parentRow = (
           '<tr class="' + cls.join(" ") + '" data-search="' +
-          escapeHtml((row.id + " " + row.name + " " + row.component + " " + row.appearsWhen + " " + row.notes).toLowerCase()) +
+          escapeHtml((row.id + " " + row.name + " " + row.component + " " + row.appearsWhen + " " + row.notes + " " + (row.description || "")).toLowerCase()) +
           '">' +
           '<td class="id-cell">' + idWithCopyHtml(row.id) + "</td>" +
-          "<td>" + escapeHtml(row.name) + "</td>" +
+          "<td>" + escapeHtml(row.name) + descHtml + "</td>" +
           '<td class="component-cell"><code>' + escapeHtml(row.component) + "</code></td>" +
           '<td class="appears-cell">' + linkify(row.appearsWhen, row.relatedIds) + "</td>" +
           "<td></td>" +
@@ -490,11 +562,11 @@
       }).join("");
 
       return (
-        '<section class="feature-group">' +
-        "<h2><span class=\"letter\">" + escapeHtml(group.letter) + '</span> ' + escapeHtml(group.folder) +
+        '<section class="feature-group" id="group-' + escapeHtml(group.letter) + '" aria-labelledby="group-' + escapeHtml(group.letter) + '-heading">' +
+        "<h2 id=\"group-" + escapeHtml(group.letter) + "-heading\"><span class=\"letter\">" + escapeHtml(group.letter) + '</span> ' + escapeHtml(group.folder) +
         ' <span class="count-badge">(' + group.rows.length + ")</span></h2>" +
         "<table>" +
-        "<thead><tr><th>ID</th><th>Name / Element</th><th>Component / Type</th><th>Appears when / Action</th><th>Key props / style</th><th>Notes</th></tr></thead>" +
+        '<thead><tr><th scope="col">ID</th><th scope="col">Name / Element</th><th scope="col">Component / Type</th><th scope="col">Appears when / Action</th><th scope="col">Key props / style</th><th scope="col">Notes</th></tr></thead>' +
         "<tbody>" + rows + '<tr class="no-results-row is-hidden"><td colspan="6" class="no-results">No matches for this search.</td></tr>' +
         "</tbody>" +
         "</table>" +
@@ -520,6 +592,16 @@
     }
   }
 
+  function announceResults(q) {
+    const status = document.getElementById("results-status");
+    if (!q) { status.textContent = ""; return; }
+    const visibleCount = Array.from(document.querySelectorAll("tr.ui-row"))
+      .filter(function (r) { return !r.classList.contains("is-hidden"); }).length;
+    status.textContent = visibleCount === 0
+      ? "No matches for \"" + q + "\"."
+      : visibleCount + (visibleCount === 1 ? " match" : " matches") + " for \"" + q + "\".";
+  }
+
   document.getElementById("search").addEventListener("input", function (e) {
     const q = e.target.value.trim().toLowerCase();
     const allRows = document.querySelectorAll("tr.ui-row");
@@ -527,6 +609,7 @@
     if (q.length === 0) {
       allRows.forEach(function (row) { row.classList.remove("is-hidden"); });
       document.querySelectorAll(".no-results-row").forEach(function (r) { r.classList.add("is-hidden"); });
+      announceResults("");
       return;
     }
 
@@ -564,6 +647,8 @@
         .some(function (r) { return !r.classList.contains("is-hidden"); });
       noResultsRow.classList.toggle("is-hidden", anyVisible);
     });
+
+    announceResults(e.target.value.trim());
   });
 
   // Copy an ID to the clipboard on click, with a fallback for contexts
