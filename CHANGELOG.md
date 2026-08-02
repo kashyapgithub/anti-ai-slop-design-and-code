@@ -28,6 +28,42 @@ it's still current rather than trusting the date above blindly.
   properly as the sixth standing rule and re-synced `templates/AGENTS.md`
   against it.
 
+## 2026-07-27 (map view) — A visual map of the whole UI, auto-generated from the same data
+
+- Added a **Map view** to `UI-DETAIL.html`: a Table/Map toggle showing
+  every panel and sub-element as color-coded nodes, grouped by feature
+  letter, with curved connector lines drawn between related IDs
+  (hover a node to highlight just its connectors). Generated entirely
+  from the same `DATA` object the table already uses — no second data
+  entry, no separate maintenance burden as more panels get added.
+- Found and fixed a real bug during implementation: the view-switch
+  handler called `requestAnimationFrame` unguarded, which threw in any
+  environment where it isn't defined and silently skipped drawing the
+  connectors. Added a `setTimeout` fallback and verified the fix with
+  an error-tracking test, not just a visual check.
+- Verified with 25 jsdom assertions across three rounds, including a
+  direct test of the connection-deduplication logic (a relationship
+  declared from either side, e.g. `a1↔a2`, collapses to exactly one
+  connector) and confirmation that zero-size bounding rects (the
+  unavoidable case in a test environment with no real layout engine)
+  are skipped gracefully rather than drawing garbage lines at (0,0).
+- Note: this round's work was lost once to a sandbox reset before it
+  was committed, and had to be rebuilt from scratch on a fresh clone.
+  Everything through the previous entry was safe on GitHub throughout;
+  only the uncommitted map-view work needed redoing.
+
+## 2026-07-27 (loop) — Tie the 3-commit check and the 10-layer audit together explicitly
+
+- The completion gate now states the two as one loop, not two rules a
+  reader might apply separately: `git log -3` for the touched area
+  *before* starting (§15.4) → make the change → the full 10-layer audit
+  *after* (§18) → the completion gate's questions. Added this as an
+  explicit 4th completion-gate question ("did you check history before
+  and does this fit the audit after?") so the connection is stated
+  where it's most likely to actually be read, not left implicit across
+  two separately-discoverable sections. Mirrored into
+  `templates/AGENTS.md`.
+
 ## 2026-07-27 (yet again) — Navigation, descriptions, and real accessibility fixes
 
 - Added **quick-jump navigation**: a row of pills, one per feature

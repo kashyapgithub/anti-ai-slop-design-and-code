@@ -136,9 +136,19 @@ Answer these explicitly in your output, not just in your own reasoning:
 3. Did you introduce a new folder, pattern, or dependency this project
    didn't already have? If so, was that surfaced as a decision, or did
    it slip in as a side effect?
+4. Did you check the last 3 commits before you started, and does this
+   change fit the audit you ran after? Every nontrivial change has the
+   same two bookends, no exceptions: `git log -3` before, the full
+   10-layer audit after. Neither is optional; neither substitutes for
+   the other.
 
-If you can't answer all three without hedging, the task isn't finished —
+If you can't answer all four without hedging, the task isn't finished —
 go close the gap before handing the work back.
+
+**The shape of every change:** `git log -3` for the area you're
+touching → make the change → the full 10-layer audit → this
+four-question gate. That's the loop, every time — not a checklist to
+sample from.
 
 ## Project-specific context
 
