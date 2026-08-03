@@ -28,6 +28,31 @@ it's still current rather than trusting the date above blindly.
   properly as the sixth standing rule and re-synced `templates/AGENTS.md`
   against it.
 
+## 2026-07-27 (health check) — Full repo audit after a sandbox reset
+
+- Re-verified all four `enforcement/` scripts end-to-end after the
+  fresh clone (they were untested since the reset). Found what looked
+  like two failures in a combined test run — traced to a test-harness
+  mistake of my own (committing directly onto the `base` branch instead
+  of a new branch, which silently advanced `base` to equal `HEAD`,
+  leaving nothing to diff) rather than a bug in the scripts. Re-tested
+  each in isolation, correctly: all four pass/fail exactly as designed.
+- Rigorously checked every `§`-reference in both guides against real
+  headers (34 in the code guide, 16 in the design guide) — all resolve.
+  Found and fixed a real wording bug in two design-guide lines that said
+  "the same restraint as everywhere else **in this guide** (§17.2)" —
+  misleadingly implying §17.2 exists locally when it's a code-guide
+  section. Relabeled both as explicit cross-doc pointers.
+- Found a real inconsistency between the two UI-registry starter
+  templates: `UI-DETAIL.md` starts genuinely empty (examples live only
+  in HTML comments), but `UI-DETAIL.html`'s `DATA` object shipped with
+  live, uncommented example content — meaning a project copying both
+  files as instructed would start in mismatched states, contradicting
+  the sync contract the guide itself teaches. Fixed by adding an
+  explicit, impossible-to-miss comment marking the example data for
+  deletion before real use, and updated the adoption steps in
+  `templates/README.md` to say so directly.
+
 ## 2026-07-27 (map view) — A visual map of the whole UI, auto-generated from the same data
 
 - Added a **Map view** to `UI-DETAIL.html`: a Table/Map toggle showing

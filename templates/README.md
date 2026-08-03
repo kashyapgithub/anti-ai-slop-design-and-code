@@ -46,11 +46,14 @@ Everything above makes the rules *present*; it doesn't make them *forced* — an
    folders from the code guide's §17.1 directly. **If it's a web app**,
    also copy `UI-DETAIL.html` — a self-contained, dependency-free viewer
    with the same data embedded inline, so it opens straight from
-   `file://` with no server. Keep both files' data identical, updated in
-   the same commit. The `Stop` hook in `claude-code-settings.json`
-   already auto-opens it (as a new tab, never replacing what's open)
-   whenever a turn leaves `UI-DETAIL.md` with uncommitted changes — no
-   extra setup needed beyond adopting that hook.
+   `file://` with no server. **Delete its example `DATA` entries first**
+   (they're marked clearly in a comment above the object) — they exist
+   only to show the Table/Map views working on first open, not to ship.
+   Keep both files' data identical after that, updated in the same
+   commit. The `Stop` hook in `claude-code-settings.json` already
+   auto-opens it (as a new tab, never replacing what's open) whenever a
+   turn leaves `UI-DETAIL.md` with uncommitted changes — no extra setup
+   needed beyond adopting that hook.
 5. For everything else (Antigravity, Cursor, Copilot, Windsurf, Claude
    Code, and any tool without remote-URL support), pull the full guides
    into `docs/anti-ai-slop/` per the sync instructions inside each guide,
