@@ -245,6 +245,86 @@
     font-size: 0.9rem;
   }
 
+  /* ---- Data Flow view ---- */
+  #dataflow { position: relative; }
+  .flow-intro {
+    font-size: 0.8rem;
+    color: var(--ink-muted);
+    margin-bottom: 18px;
+    max-width: 640px;
+  }
+  .flow-entity {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-bottom: 18px;
+  }
+  .flow-entity-name {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-weight: 700;
+    font-size: 0.88rem;
+    color: var(--ink);
+    margin: 0 0 12px;
+  }
+  .flow-lanes {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 18px;
+    align-items: start;
+  }
+  .flow-lane-label {
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--ink-muted);
+    margin: 0 0 8px;
+    font-weight: 600;
+  }
+  .flow-lane-writers { text-align: right; }
+  .flow-lane-writers .flow-lane-label { text-align: right; }
+  .flow-lane-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .flow-lane-writers .flow-lane-chips { justify-content: flex-end; }
+  .flow-arrow-col {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--border);
+    padding-top: 22px;
+  }
+  .flow-chip {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.76rem;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 999px;
+    text-decoration: none;
+    border: 1px solid var(--border);
+    background: var(--surface-alt);
+    color: var(--accent);
+    transition: box-shadow 0.12s ease;
+  }
+  .flow-chip:hover, .flow-chip:focus-visible {
+    box-shadow: 0 0 0 2px var(--accent-soft);
+    outline: none;
+  }
+  .flow-lane-empty { color: var(--ink-muted); font-size: 0.76rem; font-style: italic; }
+  #flow-connectors {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    overflow: visible;
+  }
+  #flow-connectors path {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 1.5;
+    opacity: 0.4;
+  }
+
   #search {
     width: 100%;
     max-width: 420px;
@@ -450,6 +530,7 @@
   <div class="view-toggle" role="tablist" aria-label="Registry view">
     <button type="button" role="tab" id="tab-table" aria-selected="true" aria-controls="app" class="view-btn is-active">Table</button>
     <button type="button" role="tab" id="tab-map" aria-selected="false" aria-controls="map" class="view-btn">Map</button>
+    <button type="button" role="tab" id="tab-flow" aria-selected="false" aria-controls="dataflow" class="view-btn">Data Flow</button>
   </div>
   <nav class="quick-nav" id="quick-nav" aria-label="Jump to feature group"></nav>
   <div class="search-wrap">
@@ -462,6 +543,7 @@
 <main id="main-content" tabindex="-1">
   <div id="app" role="tabpanel" aria-labelledby="tab-table"></div>
   <div id="map" role="tabpanel" aria-labelledby="tab-map" hidden></div>
+  <div id="dataflow" role="tabpanel" aria-labelledby="tab-flow" hidden></div>
 </main>
 
 <script>
@@ -514,7 +596,8 @@
                 action: "Submits the form; on success redirects to dashboard.",
                 props: ["isSubmitting", ".btn-primary"],
                 notes: "Disabled while submitting.",
-                relatedIds: []
+                relatedIds: [],
+                flow: { writes: ["session.token"], reads: [] }
               },
               {
                 id: "a1.b",
@@ -549,6 +632,7 @@
             appearsWhen: "User selects a lower plan on the billing page AND subscription.status === 'active'.",
             notes: "Blocks downgrade if usage.seats > newPlan.seatLimit; shows b6 instead in that case.",
             relatedIds: [],
+            flow: { reads: ["session.token", "subscription.status", "usage.seats"], writes: [] },
             children: [
               {
                 id: "b5.a",
@@ -566,7 +650,8 @@
                 action: "Calls PATCH /subscription with the new plan. On success, closes and refreshes the billing page.",
                 props: ["isSubmitting", "variant=\"danger\"", "--color-danger"],
                 notes: "Disabled while isSubmitting; see b5.c for the state that gates it.",
-                relatedIds: ["b5.c"]
+                relatedIds: ["b5.c"],
+                flow: { reads: ["session.token"], writes: ["subscription.plan"] }
               },
               {
                 id: "b5.c",
@@ -575,7 +660,8 @@
                 action: "\u2014",
                 props: ["--color-warning-bg", "--color-warning-text"],
                 notes: "Only rendered when usage.seats > newPlan.seatLimit; its presence is what disables b5.b.",
-                relatedIds: ["b5.b"]
+                relatedIds: ["b5.b"],
+                flow: { reads: ["usage.seats"], writes: [] }
               }
             ]
           }
@@ -854,6 +940,111 @@
     });
   }
 
+  // ---- Data Flow view ----
+  // Pure and directly testable: walks DATA and groups every declared
+  // read/write into one entry per unique data entity, with deduplicated
+  // writer and reader ID lists. An entity written by nobody in the
+  // current data (a typo, or a reader added before its writer) still
+  // gets a card — an empty "Written by" lane is a real signal worth
+  // seeing, not something to hide.
+  function collectDataFlow(data) {
+    const entities = new Map(); // name -> { writers: Set, readers: Set }
+    function ensure(name) {
+      if (!entities.has(name)) entities.set(name, { writers: new Set(), readers: new Set() });
+      return entities.get(name);
+    }
+    function record(id, flow) {
+      if (!flow) return;
+      (flow.writes || []).forEach(function (name) { ensure(name).writers.add(id); });
+      (flow.reads || []).forEach(function (name) { ensure(name).readers.add(id); });
+    }
+    (data.groups || []).forEach(function (group) {
+      (group.rows || []).forEach(function (row) {
+        record(row.id, row.flow);
+        (row.children || []).forEach(function (child) { record(child.id, child.flow); });
+      });
+    });
+    return Array.from(entities.entries()).map(function (entry) {
+      return { name: entry[0], writers: Array.from(entry[1].writers).sort(), readers: Array.from(entry[1].readers).sort() };
+    }).sort(function (a, b) { return a.name.localeCompare(b.name); });
+  }
+
+  function flowChipHtml(id) {
+    return '<a class="flow-chip" href="#' + escapeHtml(id) + '" data-flow-id="' + escapeHtml(id) + '">' + escapeHtml(id) + "</a>";
+  }
+
+  function renderDataFlow() {
+    const el = document.getElementById("dataflow");
+    const entities = collectDataFlow(DATA);
+
+    if (entities.length === 0) {
+      el.innerHTML = '<p class="map-empty">No data flow declared yet — add a <code>flow: { reads: [...], writes: [...] }</code> field to any entry to map it here.</p>';
+      return;
+    }
+
+    const intro =
+      '<p class="flow-intro">Which panel or element reads and writes each piece of data, ' +
+      "traced across the whole product — not per feature, since data doesn't respect feature " +
+      "boundaries even when code is organized by them. Click any ID to jump to it in the table.</p>";
+
+    const cards = entities.map(function (entity) {
+      const writerChips = entity.writers.length
+        ? entity.writers.map(flowChipHtml).join("")
+        : '<span class="flow-lane-empty">nothing yet</span>';
+      const readerChips = entity.readers.length
+        ? entity.readers.map(flowChipHtml).join("")
+        : '<span class="flow-lane-empty">nothing yet</span>';
+      return (
+        '<div class="flow-entity" data-entity="' + escapeHtml(entity.name) + '">' +
+        '<div class="flow-entity-name">' + escapeHtml(entity.name) + "</div>" +
+        '<div class="flow-lanes">' +
+        '<div class="flow-lane-writers"><p class="flow-lane-label">Written by</p><div class="flow-lane-chips">' + writerChips + "</div></div>" +
+        '<div class="flow-arrow-col">&#8594;</div>' +
+        '<div class="flow-lane-readers"><p class="flow-lane-label">Read by</p><div class="flow-lane-chips">' + readerChips + "</div></div>" +
+        "</div>" +
+        "</div>"
+      );
+    }).join("");
+
+    el.innerHTML = intro + cards + '<svg id="flow-connectors" aria-hidden="true"></svg>';
+    drawDataFlowConnectors();
+  }
+
+  function drawDataFlowConnectors() {
+    const svg = document.getElementById("flow-connectors");
+    const flowEl = document.getElementById("dataflow");
+    if (!svg || !flowEl) return;
+    svg.innerHTML = "";
+
+    const flowRect = flowEl.getBoundingClientRect();
+    if (flowRect.width === 0 && flowRect.height === 0) return;
+
+    function drawSegment(fromEl, toEl) {
+      if (!fromEl || !toEl) return;
+      const r1 = fromEl.getBoundingClientRect();
+      const r2 = toEl.getBoundingClientRect();
+      if ((r1.width === 0 && r1.height === 0) || (r2.width === 0 && r2.height === 0)) return;
+      const x1 = r1.right - flowRect.left;
+      const y1 = r1.top + r1.height / 2 - flowRect.top;
+      const x2 = r2.left - flowRect.left;
+      const y2 = r2.top + r2.height / 2 - flowRect.top;
+      const midX = (x1 + x2) / 2;
+      const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      path.setAttribute("d", "M" + x1 + "," + y1 + " C " + midX + "," + y1 + " " + midX + "," + y2 + " " + x2 + "," + y2);
+      svg.appendChild(path);
+    }
+
+    collectDataFlow(DATA).forEach(function (entity) {
+      const entityEl = flowEl.querySelector('[data-entity="' + entity.name + '"]');
+      entity.writers.forEach(function (id) {
+        drawSegment(flowEl.querySelector('[data-flow-id="' + id + '"]'), entityEl);
+      });
+      entity.readers.forEach(function (id) {
+        drawSegment(entityEl, flowEl.querySelector('[data-flow-id="' + id + '"]'));
+      });
+    });
+  }
+
   function announceResults(q) {
     const status = document.getElementById("results-status");
     if (!q) { status.textContent = ""; return; }
@@ -968,46 +1159,55 @@
     document.getElementById("search").focus();
   });
 
-  // Table / Map view toggle.
+  // Table / Map / Data Flow view toggle.
   let currentView = "table";
-  function setView(view) {
-    currentView = view;
-    const tableBtn = document.getElementById("tab-table");
-    const mapBtn = document.getElementById("tab-map");
-    const app = document.getElementById("app");
-    const map = document.getElementById("map");
-
-    const showTable = view === "table";
-    app.hidden = !showTable;
-    map.hidden = showTable;
-    tableBtn.classList.toggle("is-active", showTable);
-    mapBtn.classList.toggle("is-active", !showTable);
-    tableBtn.setAttribute("aria-selected", String(showTable));
-    mapBtn.setAttribute("aria-selected", String(!showTable));
-
-    if (!showTable) {
-      // Positions only make sense once the map is actually visible —
-      // (re)draw connectors now that layout can be measured. Fall back
-      // to setTimeout if requestAnimationFrame isn't available in this
-      // environment, rather than throwing and silently skipping the draw.
-      if (typeof requestAnimationFrame === "function") {
-        requestAnimationFrame(drawConnectors);
-      } else {
-        setTimeout(drawConnectors, 0);
-      }
+  const VIEWS = {
+    table: { btnId: "tab-table", panelId: "app" },
+    map: { btnId: "tab-map", panelId: "map", onShow: drawConnectorsSafely },
+    dataflow: { btnId: "tab-flow", panelId: "dataflow", onShow: drawDataFlowConnectorsSafely }
+  };
+  function drawConnectorsSafely() { safeDeferred(drawConnectors); }
+  function drawDataFlowConnectorsSafely() { safeDeferred(drawDataFlowConnectors); }
+  function safeDeferred(fn) {
+    // Positions only make sense once the panel is actually visible —
+    // (re)draw connectors now that layout can be measured. Fall back to
+    // setTimeout if requestAnimationFrame isn't available in this
+    // environment, rather than throwing and silently skipping the draw.
+    if (typeof requestAnimationFrame === "function") {
+      requestAnimationFrame(fn);
+    } else {
+      setTimeout(fn, 0);
     }
+  }
+  function setView(view) {
+    if (!VIEWS[view]) return;
+    currentView = view;
+    Object.keys(VIEWS).forEach(function (key) {
+      const spec = VIEWS[key];
+      const btn = document.getElementById(spec.btnId);
+      const panel = document.getElementById(spec.panelId);
+      const isActive = key === view;
+      panel.hidden = !isActive;
+      btn.classList.toggle("is-active", isActive);
+      btn.setAttribute("aria-selected", String(isActive));
+    });
+    if (VIEWS[view].onShow) VIEWS[view].onShow();
   }
   document.getElementById("tab-table").addEventListener("click", function () { setView("table"); });
   document.getElementById("tab-map").addEventListener("click", function () { setView("map"); });
+  document.getElementById("tab-flow").addEventListener("click", function () { setView("dataflow"); });
 
-  // Quick-nav works from either view: switch view first if needed, then
-  // scroll to that group's section in whichever view is now showing.
+  // Quick-nav works from the table or map view; Data Flow is organized
+  // by data entity, not by feature group, so there's nothing group-shaped
+  // to jump to there — switch to table first in that case.
   document.getElementById("quick-nav").addEventListener("click", function (e) {
     const link = e.target.closest("a[data-group]");
     if (!link) return;
     e.preventDefault();
     const letter = link.getAttribute("data-group");
-    const targetId = (currentView === "table" ? "group-" : "map-group-") + letter;
+    const viewForJump = currentView === "map" ? "map" : "table";
+    if (currentView !== viewForJump) setView(viewForJump);
+    const targetId = (viewForJump === "table" ? "group-" : "map-group-") + letter;
     const target = document.getElementById(targetId);
     if (target && typeof target.scrollIntoView === "function") {
       try { target.scrollIntoView({ block: "start", behavior: "smooth" }); } catch (e2) { /* best-effort */ }
@@ -1015,34 +1215,61 @@
   });
 
   // Hovering (or focusing) a node highlights its connectors, so a busy
-  // map stays readable — the other lines don't visually compete for
-  // attention until you ask.
-  document.getElementById("map").addEventListener("mouseover", function (e) {
-    const node = e.target.closest("[data-map-id]");
-    if (!node) return;
-    const id = node.getAttribute("data-map-id");
-    document.querySelectorAll("#map-connectors path").forEach(function (p) {
-      if (p.getAttribute("data-from") === id || p.getAttribute("data-to") === id) {
-        p.classList.add("is-highlighted");
-      }
+  // map or data-flow diagram stays readable — the other lines don't
+  // visually compete for attention until you ask.
+  function wireHoverHighlight(containerId, nodeAttr, svgSelector) {
+    const container = document.getElementById(containerId);
+    container.addEventListener("mouseover", function (e) {
+      const node = e.target.closest("[" + nodeAttr + "]");
+      if (!node) return;
+      const id = node.getAttribute(nodeAttr);
+      document.querySelectorAll(svgSelector + " path").forEach(function (p) {
+        if (p.getAttribute("data-from") === id || p.getAttribute("data-to") === id) {
+          p.classList.add("is-highlighted");
+        }
+      });
     });
-  });
-  document.getElementById("map").addEventListener("mouseout", function (e) {
-    const node = e.target.closest("[data-map-id]");
-    if (!node) return;
-    document.querySelectorAll("#map-connectors path.is-highlighted").forEach(function (p) {
-      p.classList.remove("is-highlighted");
+    container.addEventListener("mouseout", function (e) {
+      const node = e.target.closest("[" + nodeAttr + "]");
+      if (!node) return;
+      document.querySelectorAll(svgSelector + " path.is-highlighted").forEach(function (p) {
+        p.classList.remove("is-highlighted");
+      });
     });
+  }
+  wireHoverHighlight("map", "data-map-id", "#map-connectors");
+
+  // A flow-chip's href is #<id> for progressive-enhancement/no-JS
+  // fallback, but the row it names lives in the table view, which is
+  // hidden while Data Flow is showing — so intercept the click, switch
+  // to table view first, then jump there the same way the hash-based
+  // jump-on-load logic already does.
+  document.getElementById("dataflow").addEventListener("click", function (e) {
+    const chip = e.target.closest(".flow-chip");
+    if (!chip) return;
+    e.preventDefault();
+    const id = chip.getAttribute("data-flow-id");
+    setView("table");
+    const target = document.getElementById(id);
+    if (!target) return;
+    document.querySelectorAll("tr.is-target").forEach(function (r) { r.classList.remove("is-target"); });
+    const row = target.closest("tr");
+    if (row) row.classList.add("is-target");
+    if (typeof target.scrollIntoView === "function") {
+      try { target.scrollIntoView({ block: "center" }); } catch (e2) { /* best-effort */ }
+    }
   });
 
-  // Redraw connectors on resize, but only while the map is the visible
-  // view — no point recomputing positions no one can see.
+  // Redraw connectors on resize, but only for whichever view is
+  // actually visible — no point recomputing positions no one can see.
   window.addEventListener("resize", function () {
     if (currentView === "map") drawConnectors();
+    if (currentView === "dataflow") drawDataFlowConnectors();
   });
 
   render();
   renderMap();
+  renderDataFlow();
 </script>
 
 </body>

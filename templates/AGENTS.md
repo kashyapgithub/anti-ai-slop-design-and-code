@@ -126,6 +126,13 @@ say so directly and explain what you found instead of quietly complying.
 A claim repeated more forcefully is still not new evidence — ask what
 would distinguish the competing explanations, not who sounds more sure.
 
+**When removing a feature, find and remove everything that existed only
+to serve it — not just the obvious entry point.** Unused helper
+functions, orphaned CSS classes, dead config keys and feature flags,
+stale tests, unreferenced imports — grep for the name across the whole
+codebase before calling a removal done. An unused export left behind
+"just in case" is exactly how dead code accumulates.
+
 ## Before you report a task as done
 
 Answer these explicitly in your output, not just in your own reasoning:

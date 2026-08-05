@@ -34,7 +34,7 @@ Before you write or generate a single line for a task, do this, in order:
 
 **A second rule with the same priority as architecture: never call a task finished on unit tests alone.** If the change touches more than one component — a network call, a database write, a queue, another module — write an integration test that exercises the real boundary, not just unit tests against a mocked version of it. See §14.1. This is the other place agents most reliably produce work that looks complete and isn't: every unit test green, and the actual seam between two pieces never once verified to work.
 
-**Eight more standing rules, no exceptions:**
+**Nine more standing rules, no exceptions:**
 - **Never commit with a message that doesn't explain *why*.** "fix stuff," "update files," or an unexplained restatement of the diff are not acceptable commit messages from an agent — see §15.1 for the full structure. Every commit message answers what, why, and where, technically and specifically — not just what the diff already shows.
 - **Never write a comment you haven't checked against the code it sits next to.** A comment that's wrong is worse than no comment, because the next reader — human or agent — trusts it by default. See §9.1 for what makes a comment clarify instead of confuse.
 - **Log through one centralized logger, generously, not scattered `console.log`/`print`.** Every significant function or step traces its entry, exit, and branch taken at `debug` level, correlated by an ID threaded through the whole operation — enough that any flow can be reconstructed from logs alone after the fact, without re-running the code. See §7.2 and §7.3.
@@ -43,6 +43,7 @@ Before you write or generate a single line for a task, do this, in order:
 - **After two failed attempts at the same reported issue, stop guessing from memory and actually research it before a third try.** Search the exact error text, check current docs and the changelog for the version in use, check the issue tracker — training data has a cutoff and is frequently not enough, especially for library behavior that's changed since. A third confident guess with no new information is the same failure as the first two. See §15.5.
 - **Establish how the person wants pushes handled, early, and honor it — don't guess a workflow.** Auto-push, hold for confirmation, or batch-and-confirm are all valid; which one is a preference to ask about, not infer. This is a workflow setting, separate from and never a substitute for the destructive-operation confirmation at the very top of this file. See §15.6.
 - **Don't change code because a user sounds confident — change it because the evidence supports it.** If someone proposes a diagnosis or a fix, verify it against git history, logs, or an actual reproduction before implementing it; if the evidence doesn't support their theory, say so directly and explain what you found instead of quietly complying. Ask the tough question rather than avoiding friction — agreement should track evidence, not social pressure, and a claim repeated more forcefully is still not new evidence. See §16.1.
+- **When removing a feature, find and remove everything that existed only to serve it — not just the obvious entry point.** Unused helper functions, orphaned CSS classes, dead config keys and feature flags, stale tests, unreferenced imports — grep for the name across the whole codebase before calling a removal done, not just where you expect it. An unused export left behind on purpose "just in case" is exactly how dead code accumulates. See §16.2.
 
 ### On a brand-new project: write the architecture down before you write any code
 
@@ -631,6 +632,17 @@ An agent under pressure to be helpful has a real bias toward agreeing: a user pr
 - **This is not license to be needlessly contrarian, and it ends the moment there's an actual answer.** If the evidence supports the user's theory, or they explicitly overrule after hearing the pushback and the specific reasoning behind it, proceed — the goal was never to win the disagreement, it was to make sure the fix targets the real cause. Once that's established, agreement is just agreement, not compliance.
 - **This applies with extra force to anything touching the destructive-operation or architecture rules at the top of this file.** "The user was confident it was fine" is never itself sufficient justification for a destructive command or an unplanned structural change — those still need their own verification, independent of how sure anyone sounded in the conversation.
 
+### 16.2 Removing a feature means removing all of it — no orphaned dead code left behind
+
+Deleting code is a different task from writing it, and agents are systematically worse at the deleting half: an agent asked to remove a feature reliably deletes the obvious center of it (the component, the route, the visible entry point) and just as reliably leaves everything that fed it — the now-unused helper function, the CSS class nothing references anymore, the config flag nobody reads, the now-dead import, the orphaned test for a function that no longer exists — sitting in the codebase, invisible until someone else trips over it months later wondering if it's still load-bearing.
+
+- **Before removing a feature, find everything that exists only to serve it — not just the entry point.** Grep for the component/function name across the whole codebase, not just where you expect it: helper functions it alone called, CSS classes/design tokens only it used, config keys only it read, feature flags only it checked, database columns or API fields only it populated, tests that exercise only it, and comments or docs that reference it. This is the same discipline as §17.4's structural review, applied to subtraction instead of addition.
+- **An unused export is not "harmless to leave."** A function nothing calls, a component nothing renders, a CSS class nothing applies — each one is a small lie about what the codebase actually does, and it costs the next reader (human or agent) real time deciding whether it's dead or just not obviously wired up yet. §5's naming and structure discipline exists to make code honest about what it does; dead code is the same failure in the opposite direction, honest about nothing.
+- **Run the same tools that would catch this on addition, in reverse.** A linter configured to flag unused variables/exports (layer 3 of §18's audit) catches plenty of this automatically — run it after a removal, not just after new code, and treat a new "unused" warning post-removal as a signal you didn't finish the job.
+- **Leftover config and data are easy to miss because nothing errors when they're stale.** A feature flag nobody checks anymore, a database column nothing reads, an environment variable nothing consumes — none of these fail a build or a test, which is exactly why they survive removals that a linter would have caught. Search for the flag/column/variable name specifically, not just the code path, before calling a removal complete.
+- **If you're not sure something is actually dead, say so and ask, rather than leaving it "just in case."** "Just in case" is how orphaned code accumulates — either confirm it's unused and remove it, or confirm it's still used somewhere and leave it, but don't default to leaving something whose status you never actually checked.
+- **A removal PR that's suspiciously small for how central the feature was is worth a second look**, the same way an unusually large PR is (§15.3) — a genuine feature removal usually touches more files than just the one everyone thinks of first.
+
 ---
 
 ## 17. Architecture & Project Structure
@@ -824,6 +836,7 @@ This is the flat, skimmable summary. §18's 10-layer audit is the sequential, ru
 **Recent-history check**
 - [ ] Looked at the last 3 commits touching this area before starting, and this change doesn't duplicate, contradict, or ignore what they just did.
 - [ ] If this is a 3rd+ attempt at the same reported issue, it's grounded in an actual search of current docs/error text/issue tracker — not a third guess from memory.
+- [ ] If this change removes a feature, grepped for everything that existed only to serve it (helpers, CSS, config, flags, tests) — not just the entry point — and removed those too.
 
 **Tests & docs**
 - [ ] Tests exist and could genuinely fail; edges + a regression test for fixed bugs.
