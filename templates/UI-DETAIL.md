@@ -28,6 +28,14 @@ that matter more than anything else in this file:
    component first. Anchor it into the source too: a one-line
    `// UI-ID: b5.b` comment on the element it describes, so the link
    works in both directions.
+5. **If an ID reads or writes a specific piece of shared data** (a store
+   value, a global entity, an API-backed field — not purely local UI
+   state), note it in that row's Notes as `reads: [...]` / `writes:
+   [...]`, naming the data by the same identifier used in code. This is
+   optional and only worth doing for data that actually crosses between
+   panels — if `UI-DETAIL.html` is in use, the same information there
+   powers its Data Flow view (a third tab alongside Table and Map)
+   automatically; keep the two in sync the same way as everything else.
 
 Update this file in the same commit that adds or changes the UI element
 it describes. A stale registry is worse than none.
@@ -65,4 +73,14 @@ Sub-IDs are letters, sequential within their panel, in the order added
 independently-meaningful elements need one; static text doesn't. Add a
 matching `// UI-ID: a1.a` comment in the component near each element
 that gets a sub-ID.
+
+If an ID crosses shared data, add it to that row's Notes, e.g.:
+
+| a1.a | "Sign in" button | button | Submits the form. | `isSubmitting`, `.btn-primary` | writes: session.token |
+| b5   | Downgrade confirmation | `DowngradeConfirm.tsx` | ... | | reads: session.token, subscription.status |
+
+`UI-DETAIL.html`'s Data Flow tab (if the project uses it) traces these
+automatically across the whole product, grouped by data entity rather
+than by feature — since data doesn't respect feature boundaries even
+when the code is organized by them.
 -->

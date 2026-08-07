@@ -1,4 +1,38 @@
 <!DOCTYPE html>
+<!--
+  UI-DETAIL.html — extension guide for whoever (human or agent) adds
+  the next view or field to this file. Read this before changing
+  anything, so quality doesn't quietly erode as more gets bolted on.
+
+  - Data stays in one place: the DATA object further down. Every view
+    (Table, Map, Data Flow) reads from it; none of them should ever
+    hold their own copy of a fact. If you add a new field, add it to
+    DATA's shape first, then teach each relevant render function to use
+    it — never invent a second data source for a new view.
+  - New optional fields are additive and safe by default: give existing
+    entries no reason to break if a field is missing. Check for it
+    (`row.description ? ... : ""`) rather than assuming every entry has
+    every field — real data will be incomplete before it's complete.
+  - A new view follows the existing shape: a render function that
+    builds DOM from DATA, added to the VIEWS map (search for `const
+    VIEWS = {`) with a btnId/panelId, and — if it draws connectors — an
+    onShow hook using the same requestAnimationFrame-with-setTimeout-
+    fallback pattern the Map and Data Flow views already use. Copy
+    that pattern; don't invent a new one per view.
+  - Every escapeHtml/escapeRegex call stays where it is. The one real
+    bug found in this file's history (a dotted ID like `b5.a` breaking
+    a cross-reference regex because `.` is a wildcard) came from
+    building a pattern without escaping user-controlled text first —
+    don't reintroduce that class of bug in a new feature.
+  - Before shipping a change: run it through a real DOM (jsdom is
+    enough) and check for thrown errors, not just "it looks right" —
+    several real bugs in this file (an unguarded requestAnimationFrame,
+    a duplicate id attribute, a fail-open safety check elsewhere in this
+    repo) were only caught by actually running the code, not by reading
+    it. See anti-ai-slop-code.md's 10-Layer Audit (§18) and §16.2 on not
+    leaving dead code behind if you remove a view or field instead of
+    adding one.
+-->
 <html lang="en">
 <head>
 <meta charset="UTF-8">

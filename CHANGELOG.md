@@ -28,6 +28,54 @@ it's still current rather than trusting the date above blindly.
   properly as the sixth standing rule and re-synced `templates/AGENTS.md`
   against it.
 
+## 2026-07-27 (data flow) — A third view tracing shared data across the whole product
+
+- Added a **Data Flow view** to `UI-DETAIL.html`: a third tab alongside
+  Table and Map, grouping entries by data entity rather than by feature
+  (since data doesn't respect feature boundaries even when code is
+  organized by them). Each entity gets a card showing exactly which IDs
+  write it and which read it, with clickable chips that jump straight
+  to the row in Table view, and connector arrows drawn the same way as
+  the Map view. Declared per-entry via an optional
+  `flow: { reads: [...], writes: [...] }` field — entirely opt-in, only
+  worth adding where data genuinely crosses between panels.
+- Refactored the view-toggle logic (`setView`) from a hardcoded
+  two-state boolean into a generic `VIEWS` map so a third (and any
+  future) view slots in without duplicating the show/hide logic — the
+  Table→Map two-view version would have needed a rewrite, not an
+  extension, to add a third state cleanly.
+- Found and fixed a real design bug of my own mid-build: Data Flow
+  chips link to `#<id>`, but that row lives inside the Table view,
+  which is hidden while Data Flow is showing — a plain anchor click
+  wouldn't have worked. Fixed by intercepting the click, switching to
+  Table view, then jumping and highlighting the target row.
+- Verified with 29 jsdom assertions across three rounds: DOM structure
+  (entity cards, writer/reader chip counts), a direct test of the pure
+  `collectDataFlow` grouping function (including a nested child-element
+  entry correctly attributing to its own ID, and alphabetical entity
+  sorting), view-switching with error-tracking, the fixed chip-click
+  behavior, and a full regression pass cycling through all three views
+  in sequence with no leftover errors.
+- Added a maintenance/extension guide as an HTML comment at the very
+  top of `UI-DETAIL.html` itself — the conventions this file's own
+  history has needed re-discovering (single data source, additive
+  optional fields, the requestAnimationFrame-with-fallback pattern, why
+  every ID gets escaped before building a regex), written down once so
+  the next extension doesn't have to rediscover them by causing the
+  same bugs again.
+- Added §16.2 to the code guide: removing a feature means finding and
+  removing everything that existed only to serve it — unused helpers,
+  orphaned CSS, dead config/flags, stale tests — not just the obvious
+  entry point. Ninth standing rule, synced to `templates/AGENTS.md`.
+- Strengthened §15.1: when a single file changes for more than one
+  reason in one commit, the message covers all of them, not just
+  whichever change came to mind first — a message that only mentions
+  one of three unrelated changes in a file is silent about the other
+  two, not "a complete message with extras."
+- Documented the Data Flow view across `templates/UI-DETAIL.md`, the
+  design guide's §12.3, the root README's featured callout, and
+  `templates/README.md`'s adoption steps.
+
 ## 2026-07-27 (health check) — Full repo audit after a sandbox reset
 
 - Re-verified all four `enforcement/` scripts end-to-end after the

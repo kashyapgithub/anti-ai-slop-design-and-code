@@ -497,6 +497,8 @@ A commit message is documentation for the person debugging this line six months 
 
 A commit message missing any one of these three isn't incomplete documentation — it's documentation of one axis while silently omitting the other two, and the axis it usually keeps (*what*, restated from the diff) is the one `git log -p` already gives you for free.
 
+**When a single file changes for more than one reason in the same commit, the message covers all of them — not just the change that happened to come to mind first.** A commit that touches three unrelated things in one file (a rename, a bug fix, and a new validation rule) and only mentions the rename isn't a complete message with two extra changes attached for free — it's two-thirds silent about what's actually in the diff, and a future bisect or reviewer has no way to know the other two changes exist without opening the file and reconstructing them by hand. If a file changed for multiple genuinely separate reasons, that's usually a sign the commit should be split (§15.1's "small, focused commits" principle) — but if it stays as one commit, the message enumerates every distinct change in that file, not just the title-worthy one.
+
 **Structure (works for Conventional Commits or plain prose):**
 ```
 <type>(<scope>): <imperative summary, ≤50 chars, no trailing period>
