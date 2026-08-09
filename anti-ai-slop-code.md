@@ -51,7 +51,26 @@ Everything above assumes an existing convention to find or a precedent to match.
 
 When a user first describes a project idea — before generating scaffolding, before writing the first feature, before creating a single source file — you should proactively create the architecture documentation yourself, without waiting to be asked. This is a default behavior, not an optional courtesy:
 
-1. **Create `ARCHITECTURE.md` (or `AGENTS.md`, matching whatever convention file your tooling reads automatically) as close to the first message as the idea is concrete enough to support it.** If the person is still exploring the idea itself, ask enough to pin down the shape of the thing before committing structure to paper — but once there's a real feature list or a real data model implied, write the document before the first line of implementation code, not after.
+1. **Create `ARCHITECTURE.md` (or `AGENTS.md`, matching whatever convention file your tooling reads automatically) as close to the first message as the idea is concrete enough to support it.** Before writing it, ask — don't guess the shape of the thing from a one-line request. A short, structured set of questions here is what actually makes the architecture worth writing down, instead of a plausible-sounding guess that gets rewritten twice in the first week.
+
+   **Basic — ask these every time, before anything else:**
+   - What is this, in one or two sentences — the actual problem it solves, not a feature list?
+   - Who uses it — you alone, a small internal team, or the public? This one answer changes almost every other decision downstream.
+   - Is this a prototype to throw away, or something meant to last and be maintained? (Governs how much architecture investment is even justified — the Rule of Three in §17.2 applies to the *decision to ask advanced questions at all*, not just to code.)
+   - Any tech stack already decided (language, framework, hosting), or fully open?
+   - Does this stand alone, or does it need to talk to something that already exists (an existing API, database, or service)?
+
+   **Advanced — ask only the ones the basic answers actually make relevant, not all of them reflexively:**
+   - If it has user accounts: how complex does auth need to be — email/password, social login, or enterprise SSO/RBAC?
+   - If it stores data: what kind, and does it need strong consistency/transactions, or is eventual consistency acceptable?
+   - If it's public-facing: expected scale — dozens of users, or traffic that needs to survive a real spike?
+   - If more than one organization will use it: single-tenant or multi-tenant, and does tenant data need real isolation?
+   - If it has real-time or background elements: websockets or polling, queues or scheduled jobs?
+   - If it integrates with third parties: which ones, and what happens architecturally if one of them is down?
+   - If there's a compliance angle: anything regulatory that affects where data lives or how it's logged (HIPAA, GDPR, SOC2)?
+   - If a team beyond just this person will work on it: how many people, and does that change how much convention needs to be nailed down now versus later?
+
+   **Ask them grouped, not as a wall of ten questions in one message, and stop once the basic answers make the rest obviously irrelevant.** A weekend personal project doesn't need the multi-tenancy or compliance questions — asking anyway is its own kind of unnecessary ceremony (§17.2). A project that's clearly a real, multi-user product does need them, and skipping them is how a team ends up doing an emergency multi-tenancy retrofit six months in because nobody asked on day one. Once there's a real feature list or a real data model implied by the answers, write the architecture document before the first line of implementation code, not after.
 2. **Keep it to what a new codebase actually needs, not a template checklist.** Matching §17.2's "don't earn complexity before it's justified": a three-endpoint prototype needs a few paragraphs, not a fifteen-section design doc. Include, at minimum:
    - **What this is**, in 2–3 sentences — the actual problem, not a restated feature list.
    - **The structural pattern chosen** (feature-first, layered, a specific framework's convention) **and why** — one sentence of reasoning beats a diagram nobody reads.
