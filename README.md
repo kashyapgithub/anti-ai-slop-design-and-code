@@ -71,6 +71,7 @@ All four are wired into `.github/workflows/anti-slop-gates.yml` for CI and `temp
 | `claude-code-settings.json` | A `PreToolUse` hook that **blocks a destructive Bash command before it executes** (fails closed if config can't be loaded, not open); a `Stop` hook that runs the audit every turn and can force another turn on failure; a `PostToolUse` hook that auto-formats edited files; auto-opens `UI-DETAIL.html` as a new tab (never replacing what's open) whenever a turn touches the UI registry |
 | `pre-commit` | Tool-agnostic git hook fallback — works no matter which agent (or human) is committing |
 | `UI-DETAIL.md` / `UI-DETAIL.html` | Starter files for the UI registry system — the `.html` is self-contained, dependency-free, and works via plain `file://` with no server |
+| `PROMPT-LOG.md` / `PROMPT-LOG.html` | Optional — a chronological log of the meaningful requests that shaped a project, adopted once there's real history worth tracking, not bootstrapped by default. Same self-contained, sorted-by-date viewer pattern as `UI-DETAIL.html` |
 
 ---
 

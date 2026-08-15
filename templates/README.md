@@ -55,23 +55,29 @@ Everything above makes the rules *present*; it doesn't make them *forced* — an
    auto-opens it (as a new tab, never replacing what's open) whenever a
    turn leaves `UI-DETAIL.md` with uncommitted changes — no extra setup
    needed beyond adopting that hook.
-5. For everything else (Antigravity, Cursor, Copilot, Windsurf, Claude
+5. **Optionally, once a project has enough history to be worth tracking**
+   (not reflexively on day one — see the code guide's "brand-new
+   project" section), copy `PROMPT-LOG.md` and, for a web app,
+   `PROMPT-LOG.html`. Same sync contract as `UI-DETAIL.md`/`.html`:
+   delete the example entry first, keep both files' data identical,
+   log a real request the same turn it's received.
+6. For everything else (Antigravity, Cursor, Copilot, Windsurf, Claude
    Code, and any tool without remote-URL support), pull the full guides
    into `docs/anti-ai-slop/` per the sync instructions inside each guide,
    so an agent that does read further finds the full reasoning, not just
    the condensed rules in `AGENTS.md`.
-6. **If you run both Antigravity IDE and Gemini CLI on the same machine**,
+7. **If you run both Antigravity IDE and Gemini CLI on the same machine**,
    note they currently share the same global config path
    (`~/.gemini/GEMINI.md`), which can leak rules between the two tools.
    Put shared rules in `~/.gemini/AGENTS.md` instead (Gemini CLI ignores
    it, Antigravity reads it) and keep `GEMINI.md` for Antigravity-only
    overrides.
-7. If you're on Cursor specifically, you can additionally set the
+8. If you're on Cursor specifically, you can additionally set the
    equivalent rule file to "always apply" (rather than glob- or
    agent-requested-scoped) so it's injected on every single turn, not
    just read once at session start — stronger than a file the agent
    merely *can* read.
-8. For a tool-agnostic fallback that works no matter which agent (or
+9. For a tool-agnostic fallback that works no matter which agent (or
    human) is committing, copy `pre-commit` into `.git/hooks/pre-commit`
    and `chmod +x` it — git itself will refuse a commit that fails the
    audit, regardless of what wrote the change.

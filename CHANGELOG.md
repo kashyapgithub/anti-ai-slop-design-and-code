@@ -28,6 +28,43 @@ it's still current rather than trusting the date above blindly.
   properly as the sixth standing rule and re-synced `templates/AGENTS.md`
   against it.
 
+## 2026-07-27 (planning) — Structured architecture questions, a prompt log, and section-by-section checkpointing
+
+- Replaced the vague "ask enough to pin down the shape" line in the
+  new-project bootstrapping flow with a concrete basic/advanced
+  question set — basic questions asked every time (what is this, who
+  uses it, prototype or lasting, stack constraints, standalone or
+  integrating), advanced ones asked only when the basic answers make
+  them relevant (auth complexity, data access patterns, scale,
+  multi-tenancy, real-time/background needs, compliance, team size) —
+  with explicit guidance to ask proportionally, not interrogate every
+  project equally.
+- Added explicit data-structure and technology-stack questioning to the
+  same flow, with real anti-over-engineering teeth: name the data
+  structure the actual access pattern implies (not "a database" as a
+  generic answer), and when a heavier tool comes up (Redis, Docker, a
+  message queue, microservices, Kubernetes), state the case against it
+  for this project as clearly as the case for it — default to the
+  simpler option unless the answers actually justify the heavier one.
+- Added `templates/PROMPT-LOG.md` / `PROMPT-LOG.html` — an optional
+  chronological log of the meaningful requests that shaped a project,
+  explicitly framed as adopted once a project has real history worth
+  tracking, not bootstrapped by default alongside `ARCHITECTURE.md` (a
+  new file added carelessly there would have directly contradicted this
+  same section's own warning against creating thin files to look
+  thorough). The `.html` viewer sorts by date (toggleable), supports
+  search, and has a copy-to-clipboard button per entry. Verified with 20
+  jsdom assertions, including a direct test of the date-grouping/sort
+  pure function with multi-date, same-day data.
+- Added §16.3: for work with genuine sections, finish one fully
+  (audited, edge cases found and triaged High/Medium/Low,
+  integration-tested) before starting the next, and ask before
+  proceeding rather than assuming "keep going" — proportional to task
+  size, not a ritual for a five-line fix.
+- Synced all of the above into `templates/AGENTS.md` and fixed a
+  duplicate list-item number found while updating `templates/README.md`'s
+  adoption steps.
+
 ## 2026-07-27 (data flow) — A third view tracing shared data across the whole product
 
 - Added a **Data Flow view** to `UI-DETAIL.html`: a third tab alongside

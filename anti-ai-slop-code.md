@@ -85,6 +85,8 @@ When a user first describes a project idea — before generating scaffolding, be
 3. **Treat the document as load-bearing, not aspirational.** Every subsequent session — yours or another agent's — should read it before generating structure, and every real architectural decision after the first one should update it in the same commit as the code that makes it true. A stale architecture doc is worse than none: it actively misleads the next reader, the same way a stale comment does (§9).
 4. **Don't multiply files beyond what's needed.** One `ARCHITECTURE.md` is almost always enough for a new project. Split out a separate `CONVENTIONS.md` or `DECISIONS.md` only once the single file has genuinely grown unwieldy — the same Rule of Three logic that governs when to extract a function (§5) governs when to extract a second document. Creating five thin, mostly-empty markdown files on day one to look thorough is the documentation equivalent of the five-layer abstraction slop tell in §2.
 
+**One optional exception worth naming explicitly, since it's easy to either skip or over-apply: `PROMPT-LOG.md` (and, for a web app, `templates/PROMPT-LOG.html`).** A chronological log of the meaningful requests and decisions that shaped a project — not every message, just the real ones — is genuinely useful for a project with enough of a life to have a history worth reconstructing later. It is *not* something to bootstrap reflexively alongside `ARCHITECTURE.md` for every new project on day one; that would be exactly the "five thin files to look thorough" failure the paragraph above warns against. Adopt it once a project has actually accumulated enough real decisions that a future session (yours or someone else's) would benefit from seeing the narrative — and once adopted, log a real request the same turn it's received, not batched at the end of a session where half of them get forgotten. See `templates/PROMPT-LOG.md` for the format and what counts as worth logging.
+
 This is the direct fix for the failure this whole section exists to prevent: an agent that writes the architecture down at the moment the project starts never has to guess at one later, and neither does the next agent that opens the repo.
 
 This is not a style preference among many. Get architecture right and every other rule in this guide is easy to apply consistently. Get it wrong and no amount of clean naming or good error handling saves the codebase from becoming unnavigable — for the next human, and for the next agent, including you, in the next session.
@@ -668,6 +670,16 @@ Deleting code is a different task from writing it, and agents are systematically
 - **If you're not sure something is actually dead, say so and ask, rather than leaving it "just in case."** "Just in case" is how orphaned code accumulates — either confirm it's unused and remove it, or confirm it's still used somewhere and leave it, but don't default to leaving something whose status you never actually checked.
 - **A removal PR that's suspiciously small for how central the feature was is worth a second look**, the same way an unusually large PR is (§15.3) — a genuine feature removal usually touches more files than just the one everyone thinks of first.
 
+### 16.3 For multi-part work, checkpoint by section — don't build all of it before verifying any of it
+
+A task that naturally breaks into sections (several related pages, a batch of similar endpoints, a multi-step migration) invites building straight through end to end and only checking at the very end. That's backwards: it means a flaw in section 1 gets built on top of by sections 2 through 5 before anyone notices, instead of being caught while it was still cheap to fix.
+
+- **Finish one section fully before starting the next — "fully" means audited and tested, not just working on the happy path.** For each section: run the relevant parts of the 10-layer audit (§18), and specifically do a deliberate pass looking for edge cases and bugs, not just confirming the intended path works.
+- **Prioritize what you find — High / Medium / Low — don't hand back a flat, undifferentiated list.** High: breaks core functionality, a security issue, or a data-loss/data-correctness risk. Medium: a real bug, but narrow or recoverable. Low: cosmetic, an unlikely edge case, or genuine polish. An undifferentiated bug list forces the person to do the triage themselves before they can even decide what matters; a prioritized one lets them make an informed call in one read.
+- **Confirm the section's integration tests actually pass (§14.1) before presenting it as done** — this is the same completion-gate standard as everywhere else in this guide, applied per-section instead of only at the very end of a large task.
+- **Then stop and ask before starting the next section — don't assume "keep going" is the default.** State what's done, the prioritized findings, and integration-test status, then ask explicitly whether to proceed, address something first, or adjust direction. Silently continuing into the next section with an unresolved High-priority finding from this one is the same failure the completion gate exists to catch — just deferred instead of skipped.
+- **This is proportional to the task, not a ritual for every task.** A five-line fix or a single small change doesn't need a section-by-section checkpoint process — the same Rule of Three restraint (§17.2) that governs everything else in this guide applies here too. This is for work that's genuinely large enough to have sections in the first place.
+
 ---
 
 ## 17. Architecture & Project Structure
@@ -862,6 +874,7 @@ This is the flat, skimmable summary. §18's 10-layer audit is the sequential, ru
 - [ ] Looked at the last 3 commits touching this area before starting, and this change doesn't duplicate, contradict, or ignore what they just did.
 - [ ] If this is a 3rd+ attempt at the same reported issue, it's grounded in an actual search of current docs/error text/issue tracker — not a third guess from memory.
 - [ ] If this change removes a feature, grepped for everything that existed only to serve it (helpers, CSS, config, flags, tests) — not just the entry point — and removed those too.
+- [ ] For multi-section work: this section's edge cases/bugs are triaged High/Medium/Low, integration-tested, and the person has been asked before starting the next section.
 
 **Tests & docs**
 - [ ] Tests exist and could genuinely fail; edges + a regression test for fixed bugs.

@@ -133,6 +133,13 @@ stale tests, unreferenced imports — grep for the name across the whole
 codebase before calling a removal done. An unused export left behind
 "just in case" is exactly how dead code accumulates.
 
+**For multi-part work, checkpoint by section — don't build all of it
+before verifying any of it.** Finish one section fully (audited, edge
+cases found and triaged High/Medium/Low, integration-tested), then stop
+and ask before starting the next section instead of assuming "keep
+going." Proportional to the task — a five-line fix doesn't need this,
+work with genuine sections does.
+
 ## Before you report a task as done
 
 Answer these explicitly in your output, not just in your own reasoning:
