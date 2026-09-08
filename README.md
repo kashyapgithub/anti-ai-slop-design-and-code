@@ -77,14 +77,33 @@ All four are wired into `.github/workflows/anti-slop-gates.yml` for CI and `temp
 
 ## Using this with an agent
 
-Point it at the raw files and it finds its own instructions for staying current:
+**Fastest path — one command, run from your project root:**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/kashyapgithub/anti-ai-slop-design-and-code/main/setup.sh | bash
+```
+
+That installs `AGENTS.md` + `CLAUDE.md` — the universal, cross-tool base every agent in the coverage table above reads automatically. Everything else is opt-in via flags (run with `--help`, or use process substitution instead of a plain pipe if you want flags: `bash <(curl -fsSL .../setup.sh) --all`):
+
+```
+--opencode       opencode.json (live-syncs the guide every session)
+--kilo           kilo.jsonc (same, for Kilo Code)
+--full-guides    the full reasoning behind AGENTS.md's rules
+--enforcement    CI-style gate scripts + a git pre-commit hook
+--claude-hooks   Claude Code Stop/PreToolUse/PostToolUse hooks
+--ui-detail      UI-DETAIL.md/.html starter (if this project has a UI)
+--prompt-log     PROMPT-LOG.md/.html starter (optional, adopt when earned)
+--all            everything above
+```
+
+Never overwrites a file that already exists — safe to re-run anytime with different flags.
+
+**Or, without running anything:** point an agent straight at the raw guide files and it finds its own instructions for staying current:
 
 ```
 https://raw.githubusercontent.com/kashyapgithub/anti-ai-slop-design-and-code/main/anti-ai-slop-code.md
 https://raw.githubusercontent.com/kashyapgithub/anti-ai-slop-design-and-code/main/anti-ai-slop-design.md
 ```
-
-Or, better: drop `templates/AGENTS.md` (or the tool-specific config next to it) into a project so this happens automatically, every session, without anyone pasting a link into chat.
 
 ## Status
 

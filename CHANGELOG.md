@@ -28,6 +28,29 @@ it's still current rather than trusting the date above blindly.
   properly as the sixth standing rule and re-synced `templates/AGENTS.md`
   against it.
 
+## 2026-07-27 (setup script) — One command to adopt everything
+
+- Added `setup.sh`: `curl -fsSL .../setup.sh | bash` installs
+  `AGENTS.md` + `CLAUDE.md` (the universal base) with no flags, and
+  everything else (opencode/Kilo configs, the full guides, enforcement
+  scripts + pre-commit hook, Claude Code hooks, UI-DETAIL, PROMPT-LOG)
+  behind flags — printed via `--help` and after every run.
+- Never overwrites an existing file — always skips and says so, so
+  it's safe to re-run with different flags later.
+- Fixed a real bug found by testing rather than assuming: flags
+  (including `--help`) were originally parsed *after* the base install
+  already ran, so `--help` did the install first and only then showed
+  the help text. Reordered so flag parsing happens first. Also replaced
+  a `sed`-based self-read of `--help` text with a hardcoded string,
+  since `$0` isn't a readable file when the script runs via `curl |
+  bash` — the exact invocation method the script exists for.
+- Tested against a real local HTTP server serving the actual repo
+  files (not just read by inspection): default no-flags install, `--all`,
+  idempotent re-run (everything skips, custom content preserved),
+  behavior with no `.git` present, unknown-flag handling, and `--help`
+  under a simulated piped-curl invocation.
+- Documented in the root README's "Using this with an agent" section.
+
 ## 2026-07-27 (planning) — Structured architecture questions, a prompt log, and section-by-section checkpointing
 
 - Replaced the vague "ask enough to pin down the shape" line in the
