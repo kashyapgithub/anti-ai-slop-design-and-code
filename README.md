@@ -1,8 +1,17 @@
 # Anti-AI-Slop: Design and Code
 
-## Copy-paste this into any project folder — your agent does the rest
+<p align="center">
+  <img src="https://img.shields.io/badge/install-one_command-brightgreen?style=flat-square" alt="install: one command">
+  <img src="https://img.shields.io/badge/gates-git_%2B_CI-007ec6?style=flat-square" alt="gates: git + CI">
+  <img src="https://img.shields.io/badge/agents-10%2B_tools-blueviolet?style=flat-square" alt="agents: 10+ tools">
+  <img src="https://img.shields.io/badge/license-MIT-orange?style=flat-square" alt="license: MIT">
+</p>
+
+## <img src="https://img.shields.io/badge/INSTALL-1f6feb?style=flat-square" alt=""> Copy-paste this into any project folder — your agent does the rest
 
 One command, run from the root of whatever project you're in (no install, no config, no account — it fetches everything from [github.com/kashyapgithub/anti-ai-slop-design-and-code](https://github.com/kashyapgithub/anti-ai-slop-design-and-code)):
+
+<p align="center"><img src="https://img.shields.io/badge/run_this_in_your_project_root-2ea44f?style=for-the-badge" alt="Run this in your project root"></p>
 
 ```bash
 bash <(curl -fsSL https://raw.githubusercontent.com/kashyapgithub/anti-ai-slop-design-and-code/main/setup.sh) --all
@@ -17,22 +26,22 @@ That's the entire integration. The moment it finishes:
 
 It never overwrites an existing file — safe to re-run with different flags. Want the minimal version instead? Drop `--all` and plain-pipe it; that installs just the `AGENTS.md` + `CLAUDE.md` base. Full flag list under [Using this with an agent](#using-this-with-an-agent).
 
-### What that looks like in practice — a real run, not a demo
+### <img src="https://img.shields.io/badge/PROOF-007ec6?style=flat-square" alt=""> What that looks like in practice — a real run, not a demo
 
 The command above was pointed at an empty folder (`education.ai`, `git init`, zero files, no stack chosen) and produced this, in order:
 
 | Step | Result |
 |---|---|
-| 1. Ran the one-liner | 17 files: base rules (`AGENTS.md`, `CLAUDE.md`), live-sync configs, both full guides under `docs/anti-ai-slop/`, 4 enforcement scripts + `config.env`, the pre-commit hook, `.claude/settings.json` hooks, `UI-DETAIL.md`/`.html`, `PROMPT-LOG.md`/`.html` |
-| 2. First `git commit` | **The pre-commit gate refused it.** `.claude/settings.json` embeds the detector's own destructive-op regex (it's the hook that blocks `rm -rf`), so the scan flagged the hook file itself — the gate firing on real input, not a staged demo |
-| 3. One-line fix | Added `^\.claude/settings\.json$` to `DESTRUCTIVE_OP_EXEMPT_REGEX` in `enforcement/config.env` — the only edit needed |
-| 4. Re-ran the commit | Destructive-ops scan passed, all configured audit layers ran, commit landed |
+| <img src="https://img.shields.io/badge/step_1-17_files-007ec6?style=flat-square" alt="step 1"> Ran the one-liner | 17 files: base rules (`AGENTS.md`, `CLAUDE.md`), live-sync configs, both full guides under `docs/anti-ai-slop/`, 4 enforcement scripts + `config.env`, the pre-commit hook, `.claude/settings.json` hooks, `UI-DETAIL.md`/`.html`, `PROMPT-LOG.md`/`.html` |
+| <img src="https://img.shields.io/badge/step_2-refused-red?style=flat-square" alt="step 2"> First `git commit` | **The pre-commit gate refused it.** `.claude/settings.json` embeds the detector's own destructive-op regex (it's the hook that blocks `rm -rf`), so the scan flagged the hook file itself — the gate firing on real input, not a staged demo |
+| <img src="https://img.shields.io/badge/step_3-1_line_fix-orange?style=flat-square" alt="step 3"> One-line fix | Added `^\.claude/settings\.json$` to `DESTRUCTIVE_OP_EXEMPT_REGEX` in `enforcement/config.env` — the only edit needed |
+| <img src="https://img.shields.io/badge/step_4-passed-brightgreen?style=flat-square" alt="step 4"> Re-ran the commit | Destructive-ops scan passed, all configured audit layers ran, commit landed |
 
 End state of one command plus one commit: every future commit is scanned no matter who (or what) makes it, every agent that opens the folder is briefed before its first tool call, and destructive Bash is blocked before it executes — so the human starts on the actual product (the PRD, in that case) instead of on project setup. The installer itself doesn't write a PRD or pick a stack; it deliberately leaves `AUDIT_*` empty until the project has a toolchain, and says so.
 
 ---
 
-## Why this repo produces genuinely better code and design
+## <img src="https://img.shields.io/badge/WHY-1f6feb?style=flat-square" alt=""> Why this repo produces genuinely better code and design
 
 - **The rules are written to the agent, priority-ordered, not summarized for a human reader.** "Read This First" settles conflicts explicitly: never destroy data outranks everything; architecture is decided before code is written, not discovered by writing it.
 - **A task cannot be declared done on unit tests alone.** A three-question completion gate blocks the "tests pass, therefore shipped" reflex — anything touching a network call, database write, or queue needs an integration test exercising the real boundary, not a mocked one.
@@ -61,7 +70,7 @@ This isn't just documentation. It's a working system: guides an agent reads auto
 
 ---
 
-## What's in this repo
+## <img src="https://img.shields.io/badge/INSIDE-007ec6?style=flat-square" alt=""> What's in this repo
 
 | Path | What it is |
 |---|---|
@@ -74,7 +83,7 @@ This isn't just documentation. It's a working system: guides an agent reads auto
 
 ---
 
-## The code guide (`anti-ai-slop-code.md`)
+## <img src="https://img.shields.io/badge/CODE-1f6feb?style=flat-square" alt=""> The code guide (`anti-ai-slop-code.md`)
 
 Opens with **"Read This First,"** written directly to AI agents, in priority order:
 
@@ -93,7 +102,7 @@ Then a **completion gate** (three questions an agent must answer before calling 
 
 The numbered guide itself covers: 25 named "slop tells" (the original 20 plus a 2026 agentic-era addendum), naming, functions, control flow, error handling, types, comments, dependencies, security (including **slopsquatting** — AI-hallucinated package names attackers register in advance), concurrency, performance, testing, git/commit craft, using AI without producing slop, architecture & project structure, a **10-Layer Audit** (format → type-check → lint → deps → SAST → unit → integration → architecture → comprehension → runtime smoke check), a full review checklist, a **Redis case study** (why its codebase is held up as an example — the manifesto, the single-maintainer era, antirez's comment discipline), and further reading.
 
-## The design guide (`anti-ai-slop-design.md`)
+## <img src="https://img.shields.io/badge/DESIGN-007ec6?style=flat-square" alt=""> The design guide (`anti-ai-slop-design.md`)
 
 Same structure, its own top rule: **never use emoji in any UI** — not as icons, not "just one, sparingly," not in generated copy — with an explicit icon-vs-emoji distinction (icons from a coherent set are fine and often necessary; emoji standing in for them is the actual violation).
 
@@ -103,7 +112,7 @@ Covers: 32 diagnostic "slop tells" (the original 20 plus two later rounds ground
 
 ---
 
-## `enforcement/` — rules backed by gates, not just prose
+## <img src="https://img.shields.io/badge/GATES-1f6feb?style=flat-square" alt=""> `enforcement/` — rules backed by gates, not just prose
 
 A markdown file can't force compliance. These scripts can:
 
@@ -114,7 +123,7 @@ A markdown file can't force compliance. These scripts can:
 
 All four are wired into `.github/workflows/anti-slop-gates.yml` for CI and `templates/pre-commit` for local use — every gate has been tested against real pass/fail scenarios (a deliberately broken commit that git actually refuses, then the same commit succeeding once fixed), not just written and assumed correct.
 
-## `templates/` — so the rules load automatically, not by copy-paste
+## <img src="https://img.shields.io/badge/TEMPLATES-007ec6?style=flat-square" alt=""> `templates/` — so the rules load automatically, not by copy-paste
 
 | File | What it does |
 |---|---|
@@ -127,7 +136,7 @@ All four are wired into `.github/workflows/anti-slop-gates.yml` for CI and `temp
 
 ---
 
-## Using this with an agent
+## <img src="https://img.shields.io/badge/USE-1f6feb?style=flat-square" alt=""> Using this with an agent
 
 **Fastest path — one command, run from your project root:**
 
@@ -157,10 +166,10 @@ https://raw.githubusercontent.com/kashyapgithub/anti-ai-slop-design-and-code/mai
 https://raw.githubusercontent.com/kashyapgithub/anti-ai-slop-design-and-code/main/anti-ai-slop-design.md
 ```
 
-## Status
+## <img src="https://img.shields.io/badge/STATUS-007ec6?style=flat-square" alt=""> Status
 
 Actively maintained and expanded — not a finished, static reference. See [`CHANGELOG.md`](./CHANGELOG.md) for what's changed and when.
 
-## License
+## <img src="https://img.shields.io/badge/LICENSE-007ec6?style=flat-square" alt=""> License
 
 MIT — see [`LICENSE`](./LICENSE). Copy, fork, and adapt freely, including into your own project's `docs/` or `enforcement/`.
