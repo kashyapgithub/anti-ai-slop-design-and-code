@@ -1,5 +1,37 @@
 # Anti-AI-Slop: Design and Code
 
+## Copy-paste this into any project folder — your agent does the rest
+
+One command, run from the root of whatever project you're in (no install, no config, no account — it fetches everything from [github.com/kashyapgithub/anti-ai-slop-design-and-code](https://github.com/kashyapgithub/anti-ai-slop-design-and-code)):
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/kashyapgithub/anti-ai-slop-design-and-code/main/setup.sh) --all
+```
+
+That's the entire integration. The moment it finishes:
+
+- **Your agent auto-loads the rules.** `AGENTS.md` + `CLAUDE.md` land in the project root — Claude Code, opencode, Cursor, Copilot, Windsurf, Kilo, Antigravity and anything else on the `AGENTS.md` standard read them on every session, with no prompt engineering. `opencode.json` / `kilo.jsonc` point those tools at the *live* guide, so the rules re-pull each session instead of going stale.
+- **Gates enforce what the agent reads.** A `pre-commit` hook scans every commit for destructive ops (`DROP`/`TRUNCATE`/unscoped `DELETE`/`rm -rf`/force-push/`reset --hard`) and refuses it without an explicit `CONFIRMED-DESTRUCTIVE:` marker; the architecture and integration-test gates are wired the same way. Git itself refuses the commit — an agent choosing not to comply doesn't matter.
+- **Claude Code gets hooks that fire *before* the damage** — a `PreToolUse` hook blocks a destructive Bash command pre-execution (fails closed, not open), a `Stop` hook runs the audit each turn, a `PostToolUse` hook auto-formats edited files.
+- **The full guides come along** in `docs/anti-ai-slop/` (the reasoning behind every condensed rule), plus `UI-DETAIL.md`/`.html` for the UI registry.
+
+It never overwrites an existing file — safe to re-run with different flags. Want the minimal version instead? Drop `--all` and plain-pipe it; that installs just the `AGENTS.md` + `CLAUDE.md` base. Full flag list under [Using this with an agent](#using-this-with-an-agent).
+
+### What that looks like in practice — a real run, not a demo
+
+The command above was pointed at an empty folder (`education.ai`, `git init`, zero files, no stack chosen) and produced this, in order:
+
+| Step | Result |
+|---|---|
+| 1. Ran the one-liner | 17 files: base rules (`AGENTS.md`, `CLAUDE.md`), live-sync configs, both full guides under `docs/anti-ai-slop/`, 4 enforcement scripts + `config.env`, the pre-commit hook, `.claude/settings.json` hooks, `UI-DETAIL.md`/`.html`, `PROMPT-LOG.md`/`.html` |
+| 2. First `git commit` | **The pre-commit gate refused it.** `.claude/settings.json` embeds the detector's own destructive-op regex (it's the hook that blocks `rm -rf`), so the scan flagged the hook file itself — the gate firing on real input, not a staged demo |
+| 3. One-line fix | Added `^\.claude/settings\.json$` to `DESTRUCTIVE_OP_EXEMPT_REGEX` in `enforcement/config.env` — the only edit needed |
+| 4. Re-ran the commit | Destructive-ops scan passed, all configured audit layers ran, commit landed |
+
+End state of one command plus one commit: every future commit is scanned no matter who (or what) makes it, every agent that opens the folder is briefed before its first tool call, and destructive Bash is blocked before it executes — so the human starts on the actual product (the PRD, in that case) instead of on project setup. The installer itself doesn't write a PRD or pick a stack; it deliberately leaves `AUDIT_*` empty until the project has a toolchain, and says so.
+
+---
+
 Two field guides — plus the tooling to actually enforce them — for producing work, and reviewing AI-generated work, that a competent person *chose*, rather than accepted because it was plausible-looking and technically present.
 
 This isn't just documentation. It's a working system: guides an agent reads automatically, rules backed by CI gates and git hooks that don't depend on the agent choosing to comply, and a couple of small tools (a UI registry, an audit runner) that make the rules practical to actually follow.
