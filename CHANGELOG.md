@@ -28,6 +28,21 @@ it's still current rather than trusting the date above blindly.
   properly as the sixth standing rule and re-synced `templates/AGENTS.md`
   against it.
 
+## 2026-07-27 (consolidation) — Trim templates/AGENTS.md's real redundancy
+
+- Found and fixed genuine duplication in `templates/AGENTS.md` (not the
+  full guide, where a bounded 2x restatement is deliberate pedagogy):
+  the "check 3 commits before, audit after" bookend rule was stated
+  three separate times across the standing rules list, completion-gate
+  question 4, and a "shape of every change" paragraph. Condensed to one
+  full statement plus a one-line cross-reference, cutting 8 lines with
+  no loss of substance — the file's whole purpose is being cheap to
+  load every session, so repeated content works against it specifically
+  here in a way it doesn't in the source guide.
+- Re-read the full file afterward looking for further redundancy rather
+  than stopping at the first fix; found none — each of the file's
+  standing rules covers genuinely distinct ground.
+
 ## 2026-07-27 (setup script) — One command to adopt everything
 
 - Added `setup.sh`: `curl -fsSL .../setup.sh | bash` installs
