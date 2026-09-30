@@ -32,6 +32,26 @@ End state of one command plus one commit: every future commit is scanned no matt
 
 ---
 
+## Why this repo produces genuinely better code and design
+
+- **The rules are written to the agent, priority-ordered, not summarized for a human reader.** "Read This First" settles conflicts explicitly: never destroy data outranks everything; architecture is decided before code is written, not discovered by writing it.
+- **A task cannot be declared done on unit tests alone.** A three-question completion gate blocks the "tests pass, therefore shipped" reflex — anything touching a network call, database write, or queue needs an integration test exercising the real boundary, not a mocked one.
+- **The top rules are mechanical, not advisory.** The destructive-op scanner, the architecture gate, and the integration-test gate run at the git boundary and in CI, so compliance never depends on the agent choosing to comply — git itself refuses the commit.
+- **The 10-Layer Audit chains the mechanical checks in order** — format, type-check, lint, dependency audit, SAST, unit tests, integration tests, architecture, comprehension, runtime smoke — stopping at the first failure so the layers after it aren't producing noise instead of signal.
+- **25 named slop tells for code and 32 for design**, each a specific recognizable pattern with a fix, including a 2026 agentic-era addendum for the tells that only appeared once agents started writing most of the code.
+- **The design diagnostics come from data, not taste.** They're grounded in a large-scale study ranking which visual tells people actually cite, where plain gradient defaults and unmodified shadcn/Tailwind styling outrank bento grids and glassmorphism — so the guide attacks the tells that real users notice, not the ones designers argue about.
+- **The design guide has its own hard top rule:** no emoji anywhere in a UI, with the icon-vs-emoji distinction spelled out (a real icon set is fine, an emoji standing in for one is the violation) — so "just one, sparingly" can't creep in.
+- **Every screen, panel, and button gets a permanent stable ID** (`a3`, `b5.b`) in a two-way-linked registry: the `UI-ID:` comment in the source and the `UI-DETAIL` entry point at each other, and the self-contained viewer regenerates its table, map, and data-flow views from one data source — "go to `b5.b` and change it" is unambiguous, and nothing drifts out of sync as the product grows.
+- **Commit messages and comments are graded, not vibes.** Every message must answer what, why, and where; every comment is checked against the code beside it before shipping — never stale, because a stale comment is trusted by default and is worse than none.
+- **Debugging has a fixed order:** last 5 commits first when something breaks, last 3 before any nontrivial change — regression triage instead of a broad re-read and a round of guesses.
+- **Two failed attempts at the same issue forces real research before a third** — exact error text, current docs, the issue tracker — because training-data memory isn't evidence about the version actually in use.
+- **Agreement tracks evidence, not social pressure.** A proposed diagnosis is verified against history, logs, or an actual reproduction before a fix is implemented, even when it's stated confidently — a claim repeated more forcefully is still not new evidence.
+- **The rules can't quietly go stale.** The guides carry a self-sync mechanism, the opencode/Kilo configs re-pull the live copy every session, and the CHANGELOG groups every change by milestone so catching up costs one read.
+- **One base file covers ~10 tools.** `AGENTS.md`/`CLAUDE.md` is read by Claude Code, opencode, Cursor, Copilot, Windsurf, Kilo, Antigravity and the rest of the standard — the same rules, no per-tool rewrites.
+- **The gates are proven, not assumed.** Every enforcement script was tested against real pass/fail scenarios — a deliberately broken commit that git actually refused, then the same commit succeeding once fixed (the run above is one of those, caught on the installer's own files).
+
+---
+
 Two field guides — plus the tooling to actually enforce them — for producing work, and reviewing AI-generated work, that a competent person *chose*, rather than accepted because it was plausible-looking and technically present.
 
 This isn't just documentation. It's a working system: guides an agent reads automatically, rules backed by CI gates and git hooks that don't depend on the agent choosing to comply, and a couple of small tools (a UI registry, an audit runner) that make the rules practical to actually follow.
