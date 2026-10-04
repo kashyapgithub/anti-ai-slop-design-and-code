@@ -140,6 +140,30 @@ and ask before starting the next section instead of assuming "keep
 going." Proportional to the task — a five-line fix doesn't need this,
 work with genuine sections does.
 
+## If UI-DETAIL.md / UI-DETAIL.html exist in this project
+
+Update them in the same turn you touch UI, not later. The ID scheme:
+letter = feature folder (`a` = `features/auth/`), number = panel within
+it, never renumbered (`[deprecated]` instead of deleted). A panel with
+2+ actionable elements gets sub-IDs one level deeper (`b5.a`, `b5.b`) —
+one per button/input/toggle/conditional banner. Each entry needs a
+precise, checkable "appears when" condition (not "shows up sometimes")
+and, for sub-IDs, the actual prop/state/token names that control it
+(`isSubmitting`, `--color-danger`) — enough to make a change straight
+from the file. If both `.md` and `.html` exist, update both in the same
+commit with identical data; drift between them is a bug. Full reasoning
+and the complete example: `anti-ai-slop-design.md` §12.3.
+
+## If PROMPT-LOG.md / PROMPT-LOG.html exist in this project
+
+Log a real request or decision the same turn it's received — not
+batched later, not every message. Skip filler ("yes," "continue,"
+"ok"). Log the moments that actually shaped the project: a new feature
+asked for, a direction changed, a real decision made. Format: a date
+heading, then `**Prompt:**` close to verbatim and `**Result:**` one
+line on what was done. If both `.md` and `.html` exist, keep them in
+sync the same way as `UI-DETAIL.md`/`.html` above.
+
 ## Before you report a task as done
 
 Answer these explicitly in your output, not just in your own reasoning:
